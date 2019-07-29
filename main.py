@@ -25,3 +25,18 @@ def model_load(fn):
         model, criterion, optimizer = torch.load(f)
 
 import hashlib
+
+fn = 'corpus_fold_path'
+if os.path.exists(fn):
+    print('Loading cached dataset...')
+    corpus = torch.load(fn)
+else:
+    print('Producing dataset...')
+    corpus = data.Corpus(args.data)
+    torch.save(corpus, fn)
+
+eval_batch_size = 10
+test_batch_size = 1
+train_data = batchify(corpus.train, args.batch_size, args)
+val_data = batchify(corpus.valid, eval_batch_size, args)
+test_data = batchify(corpus.test, test_batch_size, args)
