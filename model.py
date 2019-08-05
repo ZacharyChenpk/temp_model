@@ -12,12 +12,13 @@ class Pos_choser(nn.Module):
 		self.drop = nn.Dropout(dropout)
 	###
 		self.gcn = GCN(tree_dim)
+		self.aggregation = pool()
 	###
 		self.inp_dim = hidden_dim + node_dim + tree_dim
 		self.hidden_dim = hidden_dim
 		self.node_dim = node_dim
 		self.tree_dim = tree_dim
-		self.score_cal = nn.Sequential(nn.Linear(self.inp_dim, self.hidden_dim), 
+		self.score_cal = nn.Sequential(nn.Linear(self.inp_dim, self.hidden_dim * 2), 
 			nn.ReLU(),
 			self.drop,
 			nn.Linear(self.hidden_dim, 1))
@@ -28,6 +29,9 @@ class Pos_choser(nn.Module):
 	###
 		self.gcn(cur_tree)
 		node_hidden = cur_tree.hidden_states ### should be a 2-D tensor
+		graph_hidden = self.aggregation(cur_tree) 
+		graph_hidden = graph_hidden.repeat(num_samples)
+		node_hidden = torch.cat((node_hidden, graph_hidden), 1)
 	###
 		leaves = cur_tree.leaves(True)
 		leave_inds = [x.index for x in leaves]
@@ -53,8 +57,6 @@ class sentence_encoder(nn.Module):
 		)
 		initrange = 0.1
         self.encoder.weight.data.uniform_(-initrange, initrange)
-        self.decoder.bias.data.fill_(0)
-        self.decoder.weight.data.uniform_(-initrange, initrange)
         self.h_dim = h_dim
         self.emb_dim = emb_dim
         self.nlayers = nlayers
@@ -62,9 +64,42 @@ class sentence_encoder(nn.Module):
         self.chunk_size = chunk_size
         self.wdrop = wdrop
         self.dropouth = dropouth
+    ###
+        self.attention = GCN()
+        self.aggregation = pool()
+    ###
 
-    def forward(self, inp_sentence, hidden)
+    def forward(self, inp_sentence, hidden):
+    	emb = self.encoder(inp_sentence)
+    	output, hidden, raw_outputs, outputs, distances = self.rnn(emb, hidden)
+    	self.distance = distances
+    	result = output.view(output.size(0)*output.size(1), output.size(2))
+
+    	'''
+    	 It seems that the 'hidden' is the encoding output and final cell states of layers
+    	 the 'result' is (2-d) the hidden output of the last layers
+		 the 'outputs' is the stack of 'result' in layers
+    	'''
+	###
+	'''
+		word_cnt = len(inp_sentence)
+		g = Graph(node_num = word_cnt + 1)
+		Graph[word_cnt] = hidden[self.nlayers-1]
+		Graph[0:word_cnt-1] = result
+		self.attention(Graph)
+		graph_hidden = self.aggregation(Graph) 
+	'''
+	###
+
+    	return result, hidden, raw_outputs, outputs
+
+    def init_hidden(self, bsz):
+    	return self.rnn.init_hidden(bsz)
 
 
 class word_choser(nn.Module):
-	def __init__(self, ntoken, hidden_dim):
+	def __init__(self, ntoken, hidden_dim, emb_dim, chunk_size):
+		super(sentence_encoder, self).__init__()
+		self.lockdrop = LockedDropout()
+		self.dim_up = nn.Linear(emb_dim, ntoken)
+		
