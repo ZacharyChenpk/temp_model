@@ -64,10 +64,6 @@ class sentence_encoder(nn.Module):
         self.chunk_size = chunk_size
         self.wdrop = wdrop
         self.dropouth = dropouth
-    ###
-        self.attention = GCN()
-        self.aggregation = pool()
-    ###
 
     def forward(self, inp_sentence, hidden):
     	emb = self.encoder(inp_sentence)
@@ -98,8 +94,19 @@ class sentence_encoder(nn.Module):
 
 
 class word_choser(nn.Module):
-	def __init__(self, ntoken, hidden_dim, emb_dim, chunk_size):
+	def __init__(self, ntoken, hidden_dim, emb_dim, chunk_size, nlayers):
 		super(sentence_encoder, self).__init__()
 		self.lockdrop = LockedDropout()
 		self.dim_up = nn.Linear(emb_dim, ntoken)
-		
+		self.inpdim = emb_dim + ntoken + 1
+		self.outdim = ntoken
+	###
+		self.attention_gcn = GCN()
+		self.attention_pool = pool()
+	###
+		self.ntoken = ntoken
+		self.hidden_dim = hidden_dim
+		self.emb_dim = emb_dim
+		self.chunk_size = chunk_size
+		self.nlayers = nlayers
+		self.lstm = nn.LSTM(self.inpdim, ntoken, nlayers)
