@@ -44,6 +44,7 @@ class Pos_choser(nn.Module):
 		return self.score_cal.init_hidden()
 
 class sentence_encoder(nn.Module):
+	### take in a sentence, return its encoded embedding and hidden states(for attention)
 	def __init__(self, ntoken, h_dim, emb_dim, nlayers, chunk_size, wdrop=0, dropouth=0.5):
 		super(sentence_encoder, self).__init__()
 		self.lockdrop = LockedDropout()
@@ -92,14 +93,68 @@ class sentence_encoder(nn.Module):
     def init_hidden(self, bsz):
     	return self.rnn.init_hidden(bsz)
 
+class naiveLSTMCell(nn.Module):
+	### In our model, we have to involve per step of LSTM with tree processing and attention, so we rewrite the single cell of LSTM to deal with it
+	### Hope for successful parallel computing!
+	def __init__(self, inp_size, hidden_size):
+		super(naiveLSTMCell, self).__init__()
+		self.inp_size = inp_size
+		self.hidden_size = hidden_size
+
+		self.inp_i = nn.Linear(hidden_size, inp_size)
+		self.inp_h = nn.Linear(hidden_size, hidden_size)
+		self.forget_i = nn.Linear(hidden_size, inp_size)
+		self.forget_h = nn.Linear(hidden_size, hidden_size)
+		self.out_i = nn.Linear(hidden_size, inp_size)
+		self.out_h = nn.Linear(hidden_size, hidden_size)
+		self.cell_i = nn.Linear(hidden_size, inp_size)
+		self.cell_h = nn.Linear(hidden_size, hidden_size)
+
+		self.init_weights()
+		self.cur_cell = torch.zeros(hidden_size)
+		self.cur_h = torch.zeros(hidden_size)
+
+	def init_weights(self):
+		stdv = 1. / math.sqrt(self.hidden_size)
+		self.inp_i.bias.data.fill_(0)
+        self.inp_i.weight.data.uniform_(-stdv, stdv)
+        self.inp_h.bias.data.fill_(0)
+        self.inp_h.weight.data.uniform_(-stdv, stdv)
+        self.forget_i.bias.data.fill_(0)
+        self.forget_i.weight.data.uniform_(-stdv, stdv)
+        self.forget_h.bias.data.fill_(0)
+        self.forget_h.weight.data.uniform_(-stdv, stdv)
+        self.out_i.bias.data.fill_(0)
+        self.out_i.weight.data.uniform_(-stdv, stdv)
+        self.out_h.bias.data.fill_(0)
+        self.out_h.weight.data.uniform_(-stdv, stdv)
+        self.cell_i.bias.data.fill_(0)
+        self.cell_i.weight.data.uniform_(-stdv, stdv)
+        self.cell_h.bias.data.fill_(0)
+        self.cell_h.weight.data.uniform_(-stdv, stdv)
+
+	def init_cellandh(self):
+		stdv = 1. / math.sqrt(self.hidden_size)
+		self.cur_cell.data.uniform_(-stdv, stdv)
+		self.cur_h.data.uniform_(-stdv, stdv)
+
+	def forward(self, inp):
+		i = torch.sigmoid(self.inp_i(inp) + self.inp_h(self.cur_h))
+		f = torch.sigmoid(self.forget_i(inp) + self.forget_h(self.cur_h))
+		g = torch.tanh(self.cell_i(inp) + self.cell_h(self.cur_h))
+		o = torch.sigmoid(self.out_i(inp) + self.out_h(self.cur_h))
+		self.cur_cell = f * self.cur_cell + i * g
+		self.cur_h = o * torch.tanh(self.cur_cell)
+		return cur_cell, cur_h
 
 class word_choser(nn.Module):
 	def __init__(self, ntoken, hidden_dim, emb_dim, chunk_size, nlayers):
-		super(sentence_encoder, self).__init__()
+		super(word_choser, self).__init__()
 		self.lockdrop = LockedDropout()
-		self.dim_up = nn.Linear(emb_dim, ntoken)
-		self.inpdim = emb_dim + ntoken + 1
-		self.outdim = ntoken
+		self.dim_up = torch.FloatTensor(np.zeros((hidden_dim, ntoken)))
+		self.dim_down = torch.FloatTensor(np.zeros((ntoken, hidden_dim)))
+		self.inpdim = emb_dim + hidden_dim + 1
+		self.outdim = hidden_dim
 	###
 		self.attention_gcn = GCN()
 		self.attention_pool = pool()
@@ -109,4 +164,28 @@ class word_choser(nn.Module):
 		self.emb_dim = emb_dim
 		self.chunk_size = chunk_size
 		self.nlayers = nlayers
-		self.lstm = nn.LSTM(self.inpdim, ntoken, nlayers)
+		self.lstm = naiveLSTMCell(self.inpdim, hidden_dim)
+		self.init_weights()
+
+	def init_weights(self):
+		initrange = 0.1
+		self.dim_up = torch.FloatTensor(randn(hidden_dim, ntoken))
+		self.lstm.init_weights()
+		self.lstm.init_cellandh()
+
+	def forward(self, sen_emb, hiddens, pos_index)
+		hiddens_up = hiddens.mm(self.dim_up)
+		sen_len = hiddens.size(0)
+	###
+		or_graph = Graph(node_num = sen_len + 1)
+		or_graph.nodes[0:sen_len] = hiddens_up
+		or_graph.nodes[sen_len] = self.lstm.cur_h
+		self.attention_gcn(or_graph)
+		att_result = self.attention_pool(or_graph)
+		graph_emb = att_result.mm(self.dim_down)
+	###
+		the_inp = torch.cat((sen_emb, graph_emb, torch.Tensor([pos_index])))
+		_, h = self.lstm(the_inp)
+		h = h.mm(self.dim_up)
+		return h
+
