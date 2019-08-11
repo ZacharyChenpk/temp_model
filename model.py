@@ -7,21 +7,19 @@ from ON_LSTM import ONLSTMStack
 
 class Pos_choser(nn.Module):
 	### take in the tree currently generated, and return the distribution of positions to insert the next node
-	def __init__(self, ntoken, hidden_dim, node_dim, tree_dim, dropout=0.1)
+	def __init__(self, ntoken, node_dim, dropout=0.1)
 		super(Pos_choser,self).__init__()
 		self.drop = nn.Dropout(dropout)
 	###
-		self.gcn = GCN(tree_dim)
+		self.gcn = GCN()
 		self.aggregation = pool()
 	###
-		self.inp_dim = hidden_dim + node_dim + tree_dim
-		self.hidden_dim = hidden_dim
+		self.inp_dim = node_dim * 2
 		self.node_dim = node_dim
-		self.tree_dim = tree_dim
-		self.score_cal = nn.Sequential(nn.Linear(self.inp_dim, self.hidden_dim * 2), 
+		self.score_cal = nn.Sequential(nn.Linear(self.inp_dim, self.node_dim), 
 			nn.ReLU(),
 			self.drop,
-			nn.Linear(self.hidden_dim, 1))
+			nn.Linear(self.node_dim, 1))
 
 	def forward(self, cur_tree)
 		num_samples = cur_tree.size(0)
