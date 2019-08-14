@@ -36,7 +36,7 @@ class Pos_choser(nn.Module):
 		leave_states = node_hidden[leave_inds]
 		scores = map(self.score_cal.forward, leave_states)
 		scores = F.softmax(scores)
-		return leaves, scores
+		return leaves, leave_inds, scores
 
 	def init_hidden(self):
 		return self.score_cal.init_hidden()
@@ -69,7 +69,6 @@ class sentence_encoder(nn.Module):
     	output, hidden, raw_outputs, outputs, distances = self.rnn(emb, hidden)
     	self.distance = distances
     	result = output.view(output.size(0)*output.size(1), output.size(2))
-
     	'''
     	 It seems that the 'hidden' is the encoding output and final cell states of layers
     	 the 'result' is (2-d) the hidden output of the last layers
@@ -86,7 +85,7 @@ class sentence_encoder(nn.Module):
 	'''
 	###
 
-    	return result, hidden, raw_outputs, outputs
+    	return torch.transpose(result), hidden, raw_outputs, outputs
 
     def init_hidden(self, bsz):
     	return self.rnn.init_hidden(bsz)
@@ -132,9 +131,13 @@ class naiveLSTMCell(nn.Module):
         self.cell_h.weight.data.uniform_(-stdv, stdv)
 
 	def init_cellandh(self):
+		'''
 		stdv = 1. / math.sqrt(self.hidden_size)
 		self.cur_cell.data.uniform_(-stdv, stdv)
 		self.cur_h.data.uniform_(-stdv, stdv)
+		'''
+		self.cur_cell.data.fill_(0)
+		self.cur_h.data.fill_(0)
 
 	def forward(self, inp):
 		i = torch.sigmoid(self.inp_i(inp) + self.inp_h(self.cur_h))
