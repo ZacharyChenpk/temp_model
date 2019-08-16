@@ -1,6 +1,5 @@
 import torch
 
-
 def repackage_hidden(h):
     """Wraps hidden states in new Tensors,
     to detach them from their history."""
