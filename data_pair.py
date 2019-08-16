@@ -1,8 +1,13 @@
 import os
 import torch
+import sys
 
 from collections import Counter
 
+import nltk
+import torch
+sys.path.append('./data/nltk_data')
+from nltk.corpus import treebank
 
 class Dictionary(object):
     def __init__(self):
@@ -24,8 +29,12 @@ class Dictionary(object):
         return len(self.idx2word)
 
 class Corpus(object):
+    """
+        read in dataset and tokenize the corpus
+    """
     def __init__(self, path):
         self.dictionary = Dictionary()
+        self.dictionary_out = Dictionary()
         self.train = self.tokenize(os.path.join(path, 'train_x.txt', 'train_y.txt'))
         self.valid = self.tokenize(os.path.join(path, 'valid_x.txt', 'valid_y.txt'))
         self.test = self.tokenize(os.path.join(path, 'test_x.txt', 'test_y.txt'))
@@ -37,10 +46,10 @@ class Corpus(object):
         return (map(self.dictionary.word2idx.__getitem__, xwords), map(self.dictionary.word2idx.__getitem__, ywords))
 
         ### Tokenizes two text files and add to the dictionary
-        ### We stored source sentences in PATH and target sentences in TAR_PATH
-    def tokenize(self, path, tar_path):
+        ### We stored source sentences in PATH and target sentences in TARGET_PATH
+    def tokenize(self, path, target_path):
         assert os.path.exists(path)
-        assert os.path.exists(tar_path)
+        assert os.path.exists(target_path)
         ### Add words to the dictionary
         with open(path, 'r') as f:
             tokens = 0
@@ -49,7 +58,7 @@ class Corpus(object):
                 tokens += len(words)
                 for word in words:
                     self.dictionary.add_word(word)
-        with open(tar_path, 'r') as f:
+        with open(target_path, 'r') as f:
             tar_tokens = 0
             for line in f:
                 words = line.split() + ['<eos>']
@@ -58,6 +67,6 @@ class Corpus(object):
                     self.dictionary.add_word(word)
 
         ### Tokenize file content
-        zipped = list(zip(open(path, 'r'), open(tar_path, 'r')))
+        zipped = list(zip(open(path, 'r'), open(target_path, 'r')))
 
         return map(self.pairtoken, zipped)

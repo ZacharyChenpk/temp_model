@@ -7,11 +7,14 @@ import torch.nn as nn
 import torch.optim.lr_scheduler as lr_scheduler
 import torch.nn.functional as F
 import os
+from random import sample, random, randint
 
 import data_pair as data
 from utils import batchify, repackage_hidden
 from model import Pos_choser, sentence_encoder, word_choser
+from evaluate import predict_batch
 import tree
+from tree import random_seq, print_tree
 
 parser = argparse.ArgumentParser(description='PyTorch PennTreeBank RNN/LSTM Language Model')
 parser.add_argument('--data', type=str, default='data/penn/',
@@ -95,10 +98,11 @@ val_data = batchify(corpus.valid, eval_batch_size, args)
 test_data = batchify(corpus.test, test_batch_size, args)
 
 ntokens = len(corpus.dictionary)
+ntokens_out = len(corpus.dictionary_out)
 
 model_pos = Pos_choser(ntokens, args.nodedim, args.dropout)
 model_encoder = sentence_encoder(ntokens, args.hidsize, args.emsize, args.nlayers, args.chunk_size, wdrop=0, dropouth=args.dropout)
-model_word = word_choser(ntokens, args.hidsize, args.emsize, args.chunk_size, args.nlayers)
+model_word = word_choser(ntokens, ntokens_out, args.hidsize, args.emsize, args.chunk_size, args.nlayers)
 
 if args.resume:
 	print('Resuming models ...')
@@ -125,7 +129,7 @@ def single_tree_loss(tree, true_ans):
 	ans_dis[leave_inds.find(true_ans)] = 1
 	return F.kl_div(scores, ans_dis)
 
-def single_sen_decode_loss(encode, hiddens, true_pos, word_ans)
+def single_sen_decode_loss(encode, hiddens, true_pos, word_ans):
 	model_word.lstm.init_cellandh()
 	out_dist = model_word(encode, hiddens, true_pos)
 	return F.kl_div(out_dist, word_ans)
@@ -135,6 +139,7 @@ def batch_loss(X, Y, Y_tree):
 	decoder_loss = 0.0
 	pos_loss = 0.0
 	ntokens = len(corpus.dictionary)
+	ntokens_out = len(corpus.dictionary_out)
 	hidden_encoder = model_encoder.init_hidden(args.batch_size)
 	hidden_outs, layer_outs = model_encoder(X, hidden_encoder)
 	encodes = layer_outs[-1][1]
@@ -150,8 +155,8 @@ def batch_loss(X, Y, Y_tree):
 	treeseqs = reduce(operator.add, batch_tree_ret[3])
 	pos_loss = sum(map(single_tree_loss, treeseqs, indseqs))
 
-	wordseqs = map(corpus.dictionary.word2idx.__getitem__, wordseqs)
-	word_onehot = torch.zeros(args.batch_size, ntokens).scatter_(1, wordseqs, 1)
+	wordseqs = map(corpus.dictionary_out.word2idx.__getitem__, wordseqs)
+	word_onehot = torch.zeros(args.batch_size, ntokens_out).scatter_(1, wordseqs, 1)
 	for i in range(len(lenseqs)-1):
 		decoder_loss += single_sen_decode_loss(encodes[i], hidden_outs[lenseqs[i]:lenseqs[i+1]], indseqs[i], word_onehot[i])
 
@@ -173,6 +178,7 @@ def train_one_epoch(epoch):
 	total_loss = 0.
 	start_time = time.time()
 	ntokens = len(corpus.dictionary)
+	ntokens_out = len(corpus.dictionary_out)
 	hidden_encoder = model_encoder.init_hidden(args.batch_size)
 	hidden_pos = model_pos.init_hidden()
 
@@ -193,13 +199,26 @@ def train_one_epoch(epoch):
 		pos_loss.backward()
 		decoder_loss.backward()
 
-		if args.clip: torch.nn.utils.clip_grad_norm_(params, args.clip)
+		if args.clip: 
+			torch.nn.utils.clip_grad_norm_(params, args.clip)
         optimizer_pos.step()
         optimizer_encoder.step()
 
+        if random()>0.7:
+	    	model_pos.eval()
+			model_encoder.eval()
+			model_word.eval()
+		    the_sample = randint(0, len(X)-1)
+	    	Ys, Ytrees = predict_batch(model_pos, model_encoder, model_word, [X[the_sample]], corpus)
+	    	print('Trigger a show!')
+	    	print('input sentence:', X[the_sample])
+	    	print('true answer:', Y[the_sample])
+	    	print('output sentence:', Ys[0])
+	    	print_tree(Ytrees[0], show_index=True)
+
     print('epoch: {0}, pos_loss:{1}, decoder_loss:{2}, sentence/s: {3}'.format(epoch, pos_loss, decoder_loss, int(len(X)/(time.time()-start_time))))
-    	global_pos_losses.append(pos_loss)
-    	global_decoder_losses.append(decoder_loss)
+    global_pos_losses.append(pos_loss)
+    global_decoder_losses.append(decoder_loss)
 
     if epoch % args.save_every == 0:
         print('saving checkpoint at epoch {0}'.format(epoch))
@@ -213,7 +232,7 @@ stored_loss = 100000000
 
 # use Ctrl+C to break out of training at any point
 try:
-	for epoch in range(1, args.epochs + 1)
+	for epoch in range(1, args.epochs + 1):
 		train_one_epoch(epoch)
 except KeyboardInterrupt:
     print('-' * 89)

@@ -1,3 +1,4 @@
+import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -7,7 +8,7 @@ from ON_LSTM import ONLSTMStack
 
 class Pos_choser(nn.Module):
 	### take in the tree currently generated, and return the distribution of positions to insert the next node
-	def __init__(self, ntoken, node_dim, dropout=0.1)
+	def __init__(self, ntoken, node_dim, dropout=0.1):
 		super(Pos_choser,self).__init__()
 		self.drop = nn.Dropout(dropout)
 	###
@@ -21,7 +22,7 @@ class Pos_choser(nn.Module):
 			self.drop,
 			nn.Linear(self.node_dim, 1))
 
-	def forward(self, cur_tree)
+	def forward(self, cur_tree):
 		num_samples = cur_tree.size(0)
 		cur_tree.make_index(0)
 	###
@@ -53,7 +54,7 @@ class sentence_encoder(nn.Module):
 			chunk_size = chunk_size,
 			dropconnect = wdrop,
 			dropout = dropouth
-		)
+			)
 		initrange = 0.1
         self.encoder.weight.data.uniform_(-initrange, initrange)
         self.h_dim = h_dim
@@ -85,7 +86,7 @@ class sentence_encoder(nn.Module):
 	'''
 	###
 
-    	return torch.transpose(result), hidden, raw_outputs, outputs
+    	return result.permute(0,1), hidden, raw_outputs, outputs
 
     def init_hidden(self, bsz):
     	return self.rnn.init_hidden(bsz)
@@ -149,11 +150,12 @@ class naiveLSTMCell(nn.Module):
 		return cur_cell, cur_h
 
 class word_choser(nn.Module):
-	def __init__(self, ntoken, hidden_dim, emb_dim, chunk_size, nlayers):
+	def __init__(self, ntoken, ntoken_out, hidden_dim, emb_dim, chunk_size, nlayers):
 		super(word_choser, self).__init__()
 		self.lockdrop = LockedDropout()
-		self.dim_up = torch.FloatTensor(np.zeros((hidden_dim, ntoken)))
-		self.dim_down = torch.FloatTensor(np.zeros((ntoken, hidden_dim)))
+		self.dim_up = torch.nn.Parameter(torch.FloatTensor(np.zeros((hidden_dim, ntoken))))
+		self.dim_down = torch.nn.Parameter(torch.FloatTensor(np.zeros((ntoken, hidden_dim))))
+		self.dim_out = torch.nn.Parameter(torch.FloatTensor(np.zeros((hidden_dim, ntoken_out))))
 		self.inpdim = emb_dim + hidden_dim + 1
 		self.outdim = hidden_dim
 	###
@@ -161,6 +163,7 @@ class word_choser(nn.Module):
 		self.attention_pool = pool()
 	###
 		self.ntoken = ntoken
+		self.ntoken_out = ntoken_out
 		self.hidden_dim = hidden_dim
 		self.emb_dim = emb_dim
 		self.chunk_size = chunk_size
@@ -170,11 +173,13 @@ class word_choser(nn.Module):
 
 	def init_weights(self):
 		initrange = 0.1
-		self.dim_up = torch.FloatTensor(randn(hidden_dim, ntoken))
+		self.dim_up.data.uniform_(-initrange, initrange)
+		self.dim_down.data.uniform_(-initrange, initrange)
+		self.dim_out.data.uniform_(-initrange, initrange)
 		self.lstm.init_weights()
 		self.lstm.init_cellandh()
 
-	def forward(self, sen_emb, hiddens, pos_index)
+	def forward(self, sen_emb, hiddens, pos_index):
 		hiddens_up = hiddens.mm(self.dim_up)
 		sen_len = hiddens.size(0)
 	###
@@ -187,6 +192,11 @@ class word_choser(nn.Module):
 	###
 		the_inp = torch.cat((sen_emb, graph_emb, torch.Tensor([pos_index])))
 		_, h = self.lstm(the_inp)
-		h = h.mm(self.dim_up)
+		h = h.mm(self.dim_out)
 		return h
 
+if __name__ == "__main__":
+	pc = Pos_choser(1, 1)
+	se = sentence_encoder(1, 1, 1, 1, 1)
+	nlc = naiveLSTMCell(1, 1)
+	wc = word_choser(1, 1, 1, 1, 1)
