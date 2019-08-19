@@ -7,12 +7,19 @@ import copy
 
 class Tree():
 	### init 
+	### The MASK is used to copy trees while training the position and word choser
+	### We used the processing tree as the input of training
+	### Its word is contained in ROOT
 	def __init__(self, root):
 		self.root = root
 		self.index = 0
 		self.left = False
 		self.right = False
+		### 0: don't copy its son
+		### 1: only copy left son if it have
+		### 2: copy both left and right sons
 		self.mask = 0
+
 	def __deepcopy__(self, memo):
 		if memo is None:
 			memo = {}
@@ -23,6 +30,8 @@ class Tree():
 		if self.right and self.mask > 1:
 			dup.right = copy.deepcopy(self.right)
 		return dup
+
+	### Return the result (sentence?) of horizontal scanning
 	def horizontal_scan(self, contain_end = True):
 		flag = bool(contain_end or (not self.root == '<end>'))
 		tmp = [self.root] if flag else []
@@ -32,6 +41,9 @@ class Tree():
 				tmp.append(self.root)
 		if self.right:
 			tmp.extend(self.right.horizontal_scan(contain_end))
+
+	### Return its leaves
+	### If contain_single, it will return the single-son node too
 	def leaves(self, contain_single=False):
 		if (not self.left) and (not self.right) and not(self.root == '<end>'):
 			return [self]
@@ -43,6 +55,7 @@ class Tree():
 		if self.right:
 			tmp = tmp + self.right.leaves()
 		return tmp
+
 	def nodenum(self):
 		tmp = 1
 		if self.left:
@@ -50,12 +63,14 @@ class Tree():
 		if self.right:
 			tmp = tmp + self.right.nodenum()
 		return tmp
+
 	def tree2graph(self):
-		### just act like its name
+		### just act like its name, waiting to finish
 		return
+
+	### Attach horizontial index to the root node of its subtree
+	### Return the max index in the subtree
 	def make_index(self, start_i = 0):
-		### attach horizontial index to the root node of its subtree
-		### return the max index in the subtree
 		if self.left == False and self.right == False:
 			self.index = start_i
 			return start_i
@@ -66,6 +81,8 @@ class Tree():
 		if self.right:
 			return self.right.make_index(nodes + 1)
 		return nodes
+
+	### Find the index of specific node with given word (theroot)
 	def find_index(self, theroot):
 		a = self.left.find_index(theroot) if self.left else False
 		if a:
@@ -76,6 +93,8 @@ class Tree():
 		if a:
 			return a
 		return False
+
+	### Insert a node with given word
 	def insert_son(self, father_index, son_root):
 		if self.index == father_index:
 			if not self.left:

@@ -6,6 +6,7 @@ from collections import Counter
 
 import nltk
 import torch
+### Add the data path to syspath
 sys.path.append('./data/nltk_data')
 from nltk.corpus import treebank
 
@@ -33,7 +34,9 @@ class Corpus(object):
         read in dataset and tokenize the corpus
     """
     def __init__(self, path):
+    	### Input language dictionary
         self.dictionary = Dictionary()
+        ### Output language dictionary
         self.dictionary_out = Dictionary()
         self.train = self.tokenize(os.path.join(path, 'train_x.txt', 'train_y.txt'))
         self.valid = self.tokenize(os.path.join(path, 'valid_x.txt', 'valid_y.txt'))

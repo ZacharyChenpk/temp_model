@@ -7,7 +7,7 @@ from locked_dropout import LockedDropout
 from ON_LSTM import ONLSTMStack
 
 class Pos_choser(nn.Module):
-	### take in the tree currently generated, and return the distribution of positions to insert the next node
+	### Take in the tree currently generated, and return the distribution of positions to insert the next node
 	def __init__(self, ntoken, node_dim, dropout=0.1):
 		super(Pos_choser,self).__init__()
 		self.drop = nn.Dropout(dropout)
@@ -17,6 +17,10 @@ class Pos_choser(nn.Module):
 	###
 		self.inp_dim = node_dim * 2
 		self.node_dim = node_dim
+		'''
+			The score_cal network will take in the GCN result of a position and the aggregation result of the whole graph,
+			then calculate the score of choosing this position
+		'''
 		self.score_cal = nn.Sequential(nn.Linear(self.inp_dim, self.node_dim), 
 			nn.ReLU(),
 			self.drop,
@@ -35,8 +39,9 @@ class Pos_choser(nn.Module):
 		leaves = cur_tree.leaves(True)
 		leave_inds = [x.index for x in leaves]
 		leave_states = node_hidden[leave_inds]
-		scores = map(self.score_cal.forward, leave_states)
+		scores = map(self.score_cal, leave_states)
 		scores = F.softmax(scores)
+		### Return available positions, their indexes, and their distribution of probability
 		return leaves, leave_inds, scores
 
 	def init_hidden(self):

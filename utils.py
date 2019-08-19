@@ -1,14 +1,13 @@
 import torch
 
+### Wraps hidden states in new Tensors to detach them from their history
 def repackage_hidden(h):
-    """Wraps hidden states in new Tensors,
-    to detach them from their history."""
     if isinstance(h, torch.Tensor):
         return h.detach()
     else:
         return tuple(repackage_hidden(v) for v in h)
 
-
+### Transfer the data into batches
 def batchify(data, bsz, args):
     # Work out how cleanly we can divide the dataset into bsz parts.
     nbatch = data.size(0) // bsz
