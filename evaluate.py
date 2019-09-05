@@ -13,30 +13,29 @@ import data_pair as data
 from utils import batchify, repackage_hidden
 from model import Pos_choser, sentence_encoder, word_choser
 import tree
-from main import model_save, model_load
 
 parser = argparse.ArgumentParser(description='PyTorch PennTreeBank RNN/LSTM Language Model')
 parser.add_argument('--data', type=str, default='data/penn/',
-                    help='location of the data corpus')
+					help='location of the data corpus')
 parser.add_argument('--batch_size', type=int, default=30, metavar='N',
-                    help='batch size')
+					help='batch size')
 parser.add_argument('--seed', type=int, default=1111,
-                    help='random seed')
+					help='random seed')
 parser.add_argument('--cuda', action='store_false',
-                    help='use CUDA')
+					help='use CUDA')
 parser.add_argument('--resume', type=str, default='',
-                    help='path of model to resume')
+					help='path of model to resume')
 
 args = parser.parse_args()
 
 fn = 'corpus_fold_path'
 if os.path.exists(fn):
-    print('Loading cached dataset...')
-    corpus = torch.load(fn)
+	print('Loading cached dataset...')
+	corpus = torch.load(fn)
 else:
-    print('Producing dataset...')
-    corpus = data.Corpus(args.data)
-    torch.save(corpus, fn)
+	print('Producing dataset...')
+	corpus = data.Corpus(args.data)
+	torch.save(corpus, fn)
 
 ### Split the data into little batches
 train_data = batchify(corpus.train, args.batch_size, args)
@@ -44,6 +43,13 @@ val_data = batchify(corpus.valid, args.batch_size, args)
 test_data = batchify(corpus.test, args.batch_size, args)
 
 ### Load trained model from files
+def model_load(fn):
+    global model_pos, model_encoder, model_word, optimizer
+    if args.philly:
+        fn = os.path.join(os.getcwd(), fn)
+    with open(fn, 'rb') as f:
+        model_pos, model_encoder, model_word, optimizer = torch.load(f)
+
 if args.resume:
 	print('Resuming models ...')
 	model_load(args.resume)

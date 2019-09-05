@@ -5,6 +5,7 @@ import torch.nn.functional as F
 
 from locked_dropout import LockedDropout
 from ON_LSTM import ONLSTMStack
+from fakegcn import Graph
 
 class Pos_choser(nn.Module):
 	### Take in the tree currently generated, and return the distribution of positions to insert the next node
@@ -12,8 +13,8 @@ class Pos_choser(nn.Module):
 		super(Pos_choser,self).__init__()
 		self.drop = nn.Dropout(dropout)
 	###
-		self.gcn = GCN()
-		self.aggregation = pool()
+	#	self.gcn = GCN()
+	#	self.aggregation = pool()
 	###
 		self.inp_dim = node_dim * 2
 		self.node_dim = node_dim
@@ -26,16 +27,23 @@ class Pos_choser(nn.Module):
 			self.drop,
 			nn.Linear(self.node_dim, 1))
 
-	def forward(self, cur_tree):
+	def forward(self, cur_tree, sentence_encoder, dictionary):
 		num_samples = cur_tree.size(0)
 		cur_tree.make_index(0)
-	###
+		###
+		'''
 		self.gcn(cur_tree)
 		node_hidden = cur_tree.hidden_states ### should be a 2-D tensor
 		graph_hidden = self.aggregation(cur_tree) 
 		graph_hidden = graph_hidden.repeat(num_samples)
 		node_hidden = torch.cat((node_hidden, graph_hidden), 1)
-	###
+		'''
+		the_graph = cur_tree.tree2graph(sentence_encoder, dictionary, node_dim)
+		node_hidden = the_graph.node_embs
+		graph_hidden = the_graph.the_aggr()
+		graph_hidden = graph_hidden.repeat(num_samples).view(self.node_dim, -1)
+		node_hidden = torch.cat((node_hidden, graph_hidden), 1)
+		###
 		leaves = cur_tree.leaves(True)
 		leave_inds = [x.index for x in leaves]
 		leave_states = node_hidden[leave_inds]
@@ -61,40 +69,30 @@ class sentence_encoder(nn.Module):
 			dropout = dropouth
 			)
 		initrange = 0.1
-        self.encoder.weight.data.uniform_(-initrange, initrange)
-        self.h_dim = h_dim
-        self.emb_dim = emb_dim
-        self.nlayers = nlayers
-        self.ntoken = ntoken
-        self.chunk_size = chunk_size
-        self.wdrop = wdrop
-        self.dropouth = dropouth
+		self.encoder.weight.data.uniform_(-initrange, initrange)
+		self.h_dim = h_dim
+		self.emb_dim = emb_dim
+		self.nlayers = nlayers
+		self.ntoken = ntoken
+		self.chunk_size = chunk_size
+		self.wdrop = wdrop
+		self.dropouth = dropouth
 
-    def forward(self, inp_sentence, hidden):
-    	emb = self.encoder(inp_sentence)
-    	output, hidden, raw_outputs, outputs, distances = self.rnn(emb, hidden)
-    	self.distance = distances
-    	result = output.view(output.size(0)*output.size(1), output.size(2))
-    	'''
-    	 It seems that the 'hidden' is the encoding output and final cell states of layers
-    	 the 'result' is (2-d) the hidden output of the last layers
+	def forward(self, inp_sentence, hidden):
+		emb = self.encoder(inp_sentence)
+		output, hidden, raw_outputs, outputs, distances = self.rnn(emb, hidden)
+		self.distance = distances
+		result = output.view(output.size(0)*output.size(1), output.size(2))
+		'''
+		 It seems that the 'hidden' is the encoding output and final cell states of layers
+		 the 'result' is (2-d) the hidden output of the last layers
 		 the 'outputs' is the stack of 'result' in layers
-    	'''
-	###
-	'''
-		word_cnt = len(inp_sentence)
-		g = Graph(node_num = word_cnt + 1)
-		Graph[word_cnt] = hidden[self.nlayers-1]
-		Graph[0:word_cnt-1] = result
-		self.attention(Graph)
-		graph_hidden = self.aggregation(Graph) 
-	'''
-	###
+		'''
 
-    	return result.permute(0,1), hidden, raw_outputs, outputs
+		return result.permute(0,1), hidden, raw_outputs, outputs
 
-    def init_hidden(self, bsz):
-    	return self.rnn.init_hidden(bsz)
+	def init_hidden(self, bsz):
+		return self.rnn.init_hidden(bsz)
 
 class naiveLSTMCell(nn.Module):
 	### In our model, we have to involve per step of LSTM with tree processing and attention, so we rewrite the single cell of LSTM to deal with it
@@ -120,21 +118,21 @@ class naiveLSTMCell(nn.Module):
 	def init_weights(self):
 		stdv = 1. / math.sqrt(self.hidden_size)
 		self.inp_i.bias.data.fill_(0)
-        self.inp_i.weight.data.uniform_(-stdv, stdv)
-        self.inp_h.bias.data.fill_(0)
-        self.inp_h.weight.data.uniform_(-stdv, stdv)
-        self.forget_i.bias.data.fill_(0)
-        self.forget_i.weight.data.uniform_(-stdv, stdv)
-        self.forget_h.bias.data.fill_(0)
-        self.forget_h.weight.data.uniform_(-stdv, stdv)
-        self.out_i.bias.data.fill_(0)
-        self.out_i.weight.data.uniform_(-stdv, stdv)
-        self.out_h.bias.data.fill_(0)
-        self.out_h.weight.data.uniform_(-stdv, stdv)
-        self.cell_i.bias.data.fill_(0)
-        self.cell_i.weight.data.uniform_(-stdv, stdv)
-        self.cell_h.bias.data.fill_(0)
-        self.cell_h.weight.data.uniform_(-stdv, stdv)
+		self.inp_i.weight.data.uniform_(-stdv, stdv)
+		self.inp_h.bias.data.fill_(0)
+		self.inp_h.weight.data.uniform_(-stdv, stdv)
+		self.forget_i.bias.data.fill_(0)
+		self.forget_i.weight.data.uniform_(-stdv, stdv)
+		self.forget_h.bias.data.fill_(0)
+		self.forget_h.weight.data.uniform_(-stdv, stdv)
+		self.out_i.bias.data.fill_(0)
+		self.out_i.weight.data.uniform_(-stdv, stdv)
+		self.out_h.bias.data.fill_(0)
+		self.out_h.weight.data.uniform_(-stdv, stdv)
+		self.cell_i.bias.data.fill_(0)
+		self.cell_i.weight.data.uniform_(-stdv, stdv)
+		self.cell_h.bias.data.fill_(0)
+		self.cell_h.weight.data.uniform_(-stdv, stdv)
 
 	def init_cellandh(self):
 		'''
@@ -163,10 +161,10 @@ class word_choser(nn.Module):
 		self.dim_out = torch.nn.Parameter(torch.FloatTensor(np.zeros((hidden_dim, ntoken_out))))
 		self.inpdim = emb_dim + hidden_dim + 1
 		self.outdim = hidden_dim
-	###
-		self.attention_gcn = GCN()
-		self.attention_pool = pool()
-	###
+		###
+		#	self.attention_gcn = GCN()
+		#	self.attention_pool = pool()
+		###
 		self.ntoken = ntoken
 		self.ntoken_out = ntoken_out
 		self.hidden_dim = hidden_dim
@@ -187,14 +185,23 @@ class word_choser(nn.Module):
 	def forward(self, sen_emb, hiddens, pos_index):
 		hiddens_up = hiddens.mm(self.dim_up)
 		sen_len = hiddens.size(0)
-	###
+		###
+		'''
 		or_graph = Graph(node_num = sen_len + 1)
 		or_graph.nodes[0:sen_len] = hiddens_up
 		or_graph.nodes[sen_len] = self.lstm.cur_h
 		self.attention_gcn(or_graph)
 		att_result = self.attention_pool(or_graph)
 		graph_emb = att_result.mm(self.dim_down)
-	###
+		'''
+		or_graph = Graph(sen_len+1, self.emb_dim, self.emb_dim)
+		or_graph.ram_full_init()
+		or_graph.node_embs[0:sen_len] = hiddens_up
+		or_graph.node_embs[sen_len] = self.lstm.cur_h
+		or_graph.the_gcn()
+		att_result = or_graph.the_aggr()
+		graph_emb = att_result.mm(self.dim_down)
+		###
 		the_inp = torch.cat((sen_emb, graph_emb, torch.Tensor([pos_index])))
 		_, h = self.lstm(the_inp)
 		h = h.mm(self.dim_out)

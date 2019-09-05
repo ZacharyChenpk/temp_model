@@ -124,7 +124,7 @@ print('Model total parameters:', total_params)
 #############################################
 
 def single_tree_loss(tree, true_ans):
-	leaves, leave_inds, scores = model_pos(tree)
+	leaves, leave_inds, scores = model_pos(tree, model_encoder, corpus.dictionary_out)
 	ans_dis = torch.zeros(len(leaves))
 	ans_dis[leave_inds.find(true_ans)] = 1
 	return F.kl_div(scores, ans_dis)
@@ -201,28 +201,29 @@ def train_one_epoch(epoch):
 
 		if args.clip: 
 			torch.nn.utils.clip_grad_norm_(params, args.clip)
-        optimizer_pos.step()
-        optimizer_encoder.step()
 
-        if random()>0.7:
-	    	model_pos.eval()
+		optimizer_pos.step()
+		optimizer_encoder.step()
+
+		if random()>0.7:
+			model_pos.eval()
 			model_encoder.eval()
 			model_word.eval()
-		    the_sample = randint(0, len(X)-1)
-	    	Ys, Ytrees = predict_batch(model_pos, model_encoder, model_word, [X[the_sample]], corpus)
-	    	print('Trigger a show!')
-	    	print('input sentence:', X[the_sample])
-	    	print('true answer:', Y[the_sample])
-	    	print('output sentence:', Ys[0])
-	    	print_tree(Ytrees[0], show_index=True)
+			the_sample = randint(0, len(X)-1)
+			Ys, Ytrees = predict_batch(model_pos, model_encoder, model_word, X[the_sample], corpus)
+			print('Trigger a show!')
+			print('input sentence:', X[the_sample])
+			print('true answer:', Y[the_sample])
+			print('output sentence:', Ys[0])
+			print_tree(Ytrees[0], show_index=True)
 
-    print('epoch: {0}, pos_loss:{1}, decoder_loss:{2}, sentence/s: {3}'.format(epoch, pos_loss, decoder_loss, int(len(X)/(time.time()-start_time))))
-    global_pos_losses.append(pos_loss)
-    global_decoder_losses.append(decoder_loss)
+	print('epoch: {0}, pos_loss:{1}, decoder_loss:{2}, sentence/s: {3}'.format(epoch, pos_loss, decoder_loss, int(len(X)/(time.time()-start_time))))
+	global_pos_losses.append(pos_loss)
+	global_decoder_losses.append(decoder_loss)
 
-    if epoch % args.save_every == 0:
-        print('saving checkpoint at epoch {0}'.format(epoch))
-        model_save('models.checkpoint')
+	if epoch % args.save_every == 0:
+		print('saving checkpoint at epoch {0}'.format(epoch))
+		model_save('models.checkpoint')
 
 
 lr = args.lr
@@ -238,4 +239,4 @@ except KeyboardInterrupt:
     print('-' * 89)
     print('Exiting from training early')
     model_save('models')
-    print('| End of training | pos loss/epoch {:5.2f} | decoder ppl/epoch {:5.2f}'.format(mean(global_pos_losses), mean(global_decoder_losses))
+    print('| End of training | pos loss/epoch {:5.2f} | decoder ppl/epoch {:5.2f}'.format(mean(global_pos_losses), mean(global_decoder_losses)))
