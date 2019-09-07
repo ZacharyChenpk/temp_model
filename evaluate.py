@@ -37,11 +37,6 @@ else:
 	corpus = data.Corpus(args.data)
 	torch.save(corpus, fn)
 
-### Split the data into little batches
-train_data = batchify(corpus.train, args.batch_size, args)
-val_data = batchify(corpus.valid, args.batch_size, args)
-test_data = batchify(corpus.test, args.batch_size, args)
-
 ### Load trained model from files
 def model_load(fn):
     global model_pos, model_encoder, model_word, optimizer
@@ -49,15 +44,6 @@ def model_load(fn):
         fn = os.path.join(os.getcwd(), fn)
     with open(fn, 'rb') as f:
         model_pos, model_encoder, model_word, optimizer = torch.load(f)
-
-if args.resume:
-	print('Resuming models ...')
-	model_load(args.resume)
-
-if args.cuda:
-	model_pos = model_pos.cuda()
-	model_encoder = model_encoder.cuda()
-	model_word = model_word.cuda()
 
 ### Input a encoding of a sentence, return the decoding result and corresponding tree in timestamps
 def encode2seq(model_pos, model_word, code, hiddens, corpus, strategy='greedy'):
@@ -96,14 +82,28 @@ def eval_total_bleu(model_pos, model_encoder, model_word, test_data, corpus):
 
 	return bleus, mean(bleus)
 
-print('-------------------start evaluating-------------------')
-model_pos.eval()
-model_encoder.eval()
-model_word.eval()
-_, train_bleu = eval_total_bleu(model_pos, model_encoder, model_word, train_data, corpus)
-_, val_bleu = eval_total_bleu(model_pos, model_encoder, model_word, val_data, corpus)
-_, test_bleu = eval_total_bleu(model_pos, model_encoder, model_word, test_data, corpus)
-print('--------------------end evaluating--------------------')
-print('train_bleu: ', train_bleu)
-print('val_bleu: ', val_bleu)
-print('test_bleu: ', test_bleu)
+if __name__ == "__main__":
+	### Split the data into little batches
+	train_data = batchify(corpus.train, args.batch_size, args)
+	val_data = batchify(corpus.valid, args.batch_size, args)
+	test_data = batchify(corpus.test, args.batch_size, args)
+
+	if args.resume:
+		print('Resuming models ...')
+		model_load(args.resume)
+
+	if args.cuda:
+		model_pos = model_pos.cuda()
+		model_encoder = model_encoder.cuda()
+		model_word = model_word.cuda()
+	print('-------------------start evaluating-------------------')
+	model_pos.eval()
+	model_encoder.eval()
+	model_word.eval()
+	_, train_bleu = eval_total_bleu(model_pos, model_encoder, model_word, train_data, corpus)
+	_, val_bleu = eval_total_bleu(model_pos, model_encoder, model_word, val_data, corpus)
+	_, test_bleu = eval_total_bleu(model_pos, model_encoder, model_word, test_data, corpus)
+	print('--------------------end evaluating--------------------')
+	print('train_bleu: ', train_bleu)
+	print('val_bleu: ', val_bleu)
+	print('test_bleu: ', test_bleu)

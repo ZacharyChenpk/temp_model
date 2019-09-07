@@ -23,9 +23,9 @@ parser.add_argument('--model', type=str, default='LSTM',
                     help='type of recurrent net (LSTM, QRNN, GRU)')
 parser.add_argument('--emsize', type=int, default=400,
                     help='size of word embeddings')
-parser.add_argument('--hidsize', type=int, defalut=512,
+parser.add_argument('--hidsize', type=int, default=512,
 					help='size of hidden states in lstm')
-parser.add_argument('--nodesize', type=int, defalut=512,
+parser.add_argument('--nodesize', type=int, default=512,
 					help='size of nodes presentation in tree/graph')
 parser.add_argument('--nhid', type=int, default=1150,
                     help='number of hidden units per layer')
@@ -82,8 +82,10 @@ def model_load(fn):
 
 import hashlib
 
+always_producing = True
+
 fn = 'corpus_fold_path'
-if os.path.exists(fn):
+if os.path.exists(fn) and not always_producing:
     print('Loading cached dataset...')
     corpus = torch.load(fn)
 else:
@@ -93,6 +95,8 @@ else:
 
 eval_batch_size = 10
 test_batch_size = 1
+print(corpus.train)
+
 train_data = batchify(corpus.train, args.batch_size, args)
 val_data = batchify(corpus.valid, eval_batch_size, args)
 test_data = batchify(corpus.test, test_batch_size, args)
@@ -183,9 +187,12 @@ def train_one_epoch(epoch):
 	hidden_pos = model_pos.init_hidden()
 
 	for i in train_data:
-		X = i[:]['X']
-		Y = i[:]['Y']
+		X = torch.Tensor(i[:]['X'])
+		Y = torch.Tensor(i[:]['Y'])
 		Y_tree = i[:]['Y_tree']
+		if args.cuda:
+			X = X.cuda()
+			Y = Y.cuda()
 
 		model_pos.train()
 		model_encoder.train()

@@ -109,8 +109,8 @@ class Tree():
 				return False
 			return True
 		else:
-			if insert_son(self.left, father_index, son_root) == False:
-				return insert_son(self.right, father_index, son_root)
+			if self.left == False or self.left.insert_son(father_index, son_root) == False:
+				return self.right and self.right.insert_son(father_index, son_root)
 			return True
 
 
@@ -145,6 +145,8 @@ def random_seq(tree):
 def _build_tree_string(root, show_index=False):
 	# SOURCE: https://github.com/joowani/binarytree
 	if root is None:
+		return [], 0, 0, 0
+	if root is False:
 		return [], 0, 0, 0
 
 	line1 = []

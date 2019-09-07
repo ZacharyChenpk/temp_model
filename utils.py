@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 ### Wraps hidden states in new Tensors to detach them from their history
 def repackage_hidden(h):
@@ -10,11 +11,14 @@ def repackage_hidden(h):
 ### Transfer the data into batches
 def batchify(data, bsz, args):
 	# Work out how cleanly we can divide the dataset into bsz parts.
-	nbatch = data.size(0) // bsz
+	nbatch = data.size // bsz
 	# Trim off any extra elements that wouldn't cleanly fit (remainders).
-	data = data.narrow(0, 0, nbatch * bsz)
+	data = data[0:(nbatch * bsz)]
+	print(data)
+	print(type(data))
 	# Evenly divide the data across the bsz batches.
-	data = data.view(bsz, -1).t().contiguous()
+	data = data.reshape((bsz, -1)).T ###.contiguous()
+	data = torch.Tensor(data)
 	if args.cuda:
 		data = data.cuda()
 	return data

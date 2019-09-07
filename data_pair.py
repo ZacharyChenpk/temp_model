@@ -1,6 +1,7 @@
 import os
 import torch
 import sys
+import numpy as np
 
 from collections import Counter
 
@@ -38,21 +39,23 @@ class Corpus(object):
 		self.dictionary = Dictionary()
 		### Output language dictionary
 		self.dictionary_out = Dictionary()
-		self.train = self.tokenize(os.path.join(path, 'train_x.txt'), os.path.join(path, 'train_y.txt'))
-		self.valid = self.tokenize(os.path.join(path, 'valid_x.txt'), os.path.join(path, 'valid_y.txt'))
-		self.test = self.tokenize(os.path.join(path, 'test_x.txt'), os.path.join(path, 'test_y.txt'))
+		self.train = self.tokenize(os.path.join(path, 'train_x.txt'), os.path.join(path, 'train_y.txt'), os.path.join(path, 'train_tree.txt'))
+		self.valid = self.tokenize(os.path.join(path, 'valid_x.txt'), os.path.join(path, 'valid_y.txt'), os.path.join(path, 'valid_tree.txt'))
+		self.test = self.tokenize(os.path.join(path, 'test_x.txt'), os.path.join(path, 'test_y.txt'), os.path.join(path, 'test_tree.txt'))
+		print(type(self.train))
 
-	def pairtoken(self, the_tuple):
+	def pairtoken(self, the_tuple, the_tree):
 		x, y = the_tuple
 		xwords = x.split() + ['<eos>']
 		ywords = y.split() + ['<eos>']
-		return (map(self.dictionary.word2idx.__getitem__, xwords), map(self.dictionary.word2idx.__getitem__, ywords))
+		return {'X': list(map(self.dictionary.word2idx.__getitem__, xwords)), 'Y': list(map(self.dictionary_out.word2idx.__getitem__, ywords)), 'Y_tree': the_tree}
 
 		### Tokenizes two text files and add to the dictionary
 		### We stored source sentences in PATH and target sentences in TARGET_PATH
-	def tokenize(self, path, target_path):
+	def tokenize(self, path, target_path, tree_path):
 		assert os.path.exists(path)
 		assert os.path.exists(target_path)
+		assert os.path.exists(tree_path)
 		### Add words to the dictionary
 		with open(path, 'r') as f:
 			tokens = 0
@@ -71,5 +74,6 @@ class Corpus(object):
 
 		### Tokenize file content
 		zipped = list(zip(open(path, 'r'), open(target_path, 'r')))
+		print(zipped)
 
-		return list(map(self.pairtoken, zipped))
+		return np.asarray(list(map(self.pairtoken, zipped, torch.load(tree_path))), dtype = tuple)
