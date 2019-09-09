@@ -104,7 +104,7 @@ test_data = batchify(corpus.test, test_batch_size, args)
 ntokens = len(corpus.dictionary)
 ntokens_out = len(corpus.dictionary_out)
 
-model_pos = Pos_choser(ntokens, args.nodedim, args.dropout)
+model_pos = Pos_choser(ntokens, args.nodesize, args.dropout)
 model_encoder = sentence_encoder(ntokens, args.hidsize, args.emsize, args.nlayers, args.chunk_size, wdrop=0, dropouth=args.dropout)
 model_word = word_choser(ntokens, ntokens_out, args.hidsize, args.emsize, args.chunk_size, args.nlayers)
 
@@ -167,6 +167,7 @@ def batch_loss(X, Y, Y_tree):
 	return pos_loss, decoder_loss
 
 optimizer = None
+args.wdecay = 0
 # Ensure the optimizer is optimizing params, which includes both the model's weights as well as the criterion's weight (i.e. Adaptive Softmax)
 if args.optimizer == 'sgd':
     optimizer_pos = torch.optim.SGD(pos_params, lr=args.poslr, weight_decay=args.wdecay)
@@ -187,9 +188,9 @@ def train_one_epoch(epoch):
 	hidden_pos = model_pos.init_hidden()
 
 	for i in train_data:
-		X = torch.Tensor(i[:]['X'])
-		Y = torch.Tensor(i[:]['Y'])
-		Y_tree = i[:]['Y_tree']
+		X = torch.LongTensor([x['X'] for x in i])
+		Y = torch.LongTensor([x['Y'] for x in i])
+		Y_tree = [x['Y_tree'] for x in i]
 		if args.cuda:
 			X = X.cuda()
 			Y = Y.cuda()
@@ -197,8 +198,8 @@ def train_one_epoch(epoch):
 		model_pos.train()
 		model_encoder.train()
 		model_word.train()
-		hidden_encoder = repackage_hidden(hidden_encoder)
-		hidden_pos = repackage_hidden(hidden_pos)
+		# hidden_encoder = repackage_hidden(hidden_encoder)
+		# hidden_pos = repackage_hidden(hidden_pos)
 		optimizer_pos.zero_grad()
 		optimizer_encoder.zero_grad()
 
@@ -233,13 +234,14 @@ def train_one_epoch(epoch):
 		model_save('models.checkpoint')
 
 
-lr = args.lr
+#lr = args.lr
 global_pos_losses = []
 global_decoder_losses = []
 stored_loss = 100000000
 
 # use Ctrl+C to break out of training at any point
 try:
+	print('traindata', train_data)
 	for epoch in range(1, args.epochs + 1):
 		train_one_epoch(epoch)
 except KeyboardInterrupt:

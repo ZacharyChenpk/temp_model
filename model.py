@@ -2,6 +2,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 
 from locked_dropout import LockedDropout
 from ON_LSTM import ONLSTMStack
@@ -53,7 +54,9 @@ class Pos_choser(nn.Module):
 		return leaves, leave_inds, scores
 
 	def init_hidden(self):
-		return self.score_cal.init_hidden()
+		for layer in self.score_cal:
+			if isinstance(layer, nn.Linear):
+				torch.nn.init.xavier_uniform(layer.weight)
 
 class sentence_encoder(nn.Module):
 	### take in a sentence, return its encoded embedding and hidden states(for attention)
@@ -63,7 +66,7 @@ class sentence_encoder(nn.Module):
 		self.hdrop = nn.Dropout(dropouth)
 		self.encoder = nn.Embedding(ntoken, emb_dim)
 		self.rnn = ONLSTMStack(
-			[emb_dim] + [h_dim] + nlayers,
+			([emb_dim] + [h_dim])*nlayers,
 			chunk_size = chunk_size,
 			dropconnect = wdrop,
 			dropout = dropouth
