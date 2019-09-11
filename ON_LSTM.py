@@ -81,6 +81,8 @@ class ONLSTMCell(nn.Module):
 
 		gates = transformed_input + self.hh(hx)
 		cingate, cforgetgate = gates[:, :self.n_chunk*2].chunk(2, 1)
+		print('gates size:',gates.size())
+		print('n_chunk:', self.n_chunk, 'chunk_size:', self.chunk_size)
 		outgate, cell, ingate, forgetgate = gates[:,self.n_chunk*2:].view(-1, self.n_chunk*4, self.chunk_size).chunk(4,1)
 
 		cingate = 1. - cumsoftmax(cingate)
@@ -153,6 +155,8 @@ class ONLSTMStack(nn.Module):
 			t_input = self.cells[l].ih(prev_layer)
 
 			for t in range(length):
+				# print('prev_state[l] =',prev_state[l])
+				print('transformed_input =',t_input[t])
 				hidden, cell, d = self.cells[l](
 					None, prev_state[l],
 					transformed_input=t_input[t]

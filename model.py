@@ -56,7 +56,7 @@ class Pos_choser(nn.Module):
 	def init_hidden(self):
 		for layer in self.score_cal:
 			if isinstance(layer, nn.Linear):
-				torch.nn.init.xavier_uniform(layer.weight)
+				torch.nn.init.xavier_uniform_(layer.weight)
 
 class sentence_encoder(nn.Module):
 	### take in a sentence, return its encoded embedding and hidden states(for attention)
@@ -66,7 +66,7 @@ class sentence_encoder(nn.Module):
 		self.hdrop = nn.Dropout(dropouth)
 		self.encoder = nn.Embedding(ntoken, emb_dim)
 		self.rnn = ONLSTMStack(
-			([emb_dim] + [h_dim])*nlayers,
+			[emb_dim] + [h_dim]*nlayers,
 			chunk_size = chunk_size,
 			dropconnect = wdrop,
 			dropout = dropouth
@@ -83,6 +83,8 @@ class sentence_encoder(nn.Module):
 
 	def forward(self, inp_sentence, hidden):
 		emb = self.encoder(inp_sentence)
+		print('inp sen: ', inp_sentence)
+		print('emb: ', emb)
 		output, hidden, raw_outputs, outputs, distances = self.rnn(emb, hidden)
 		self.distance = distances
 		result = output.view(output.size(0)*output.size(1), output.size(2))

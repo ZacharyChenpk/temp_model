@@ -29,7 +29,7 @@ parser.add_argument('--nodesize', type=int, default=512,
 					help='size of nodes presentation in tree/graph')
 parser.add_argument('--nhid', type=int, default=1150,
                     help='number of hidden units per layer')
-parser.add_argument('--chunk_size', type=int, default=10,
+parser.add_argument('--chunk_size', type=int, default=16,
                     help='number of units per chunk')
 parser.add_argument('--nlayers', type=int, default=3,
                     help='number of layers')
