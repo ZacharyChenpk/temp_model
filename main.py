@@ -7,7 +7,9 @@ import torch.nn as nn
 import torch.optim.lr_scheduler as lr_scheduler
 import torch.nn.functional as F
 import os
+import operator
 from random import sample, random, randint
+from functools import reduce
 
 import data_pair as data
 from utils import batchify, repackage_hidden
@@ -145,16 +147,21 @@ def batch_loss(X, Y, Y_tree):
 	ntokens = len(corpus.dictionary)
 	ntokens_out = len(corpus.dictionary_out)
 	hidden_encoder = model_encoder.init_hidden(args.batch_size)
-	hidden_outs, layer_outs = model_encoder(X, hidden_encoder)
+	hidden_outs, layer_outs, _, opts = model_encoder(X, hidden_encoder)
 	encodes = layer_outs[-1][1]
 
-	batch_tree_ret = map(random_seq, Y_tree)
+	batch_tree_ret = list(map(random_seq, Y_tree))
 	batch_tree_ret = list(zip(*batch_tree_ret))
-	batch_tree_ret = map(list, batch_tree_ret)
-	lenseqs = map(len, batch_tree_ret[0])
-	lenseqs = [0]+reduce(operator.add, lenseqs)
+	batch_tree_ret = list(map(list, batch_tree_ret))
+	print('batch_tree_ret:')
+	for aa in batch_tree_ret:
+		print(aa)
+	raw_lenseqs = list(map(len, batch_tree_ret[0]))
+	lenseqs = [0]*(len(raw_lenseqs)-1)
+	for i in range(len(raw_lenseqs)-1):
+		lenseqs[i+1]=lenseqs[i]+raw_lenseqs[i]
 	seqs = reduce(operator.add, batch_tree_ret[0])
-	indseqs = reduce(operator.add, batch_tree_ret[1])
+	indseqs = list(reduce(operator.add, batch_tree_ret[1]))
 	wordseqs = reduce(operator.add, batch_tree_ret[2])
 	treeseqs = reduce(operator.add, batch_tree_ret[3])
 	pos_loss = sum(map(single_tree_loss, treeseqs, indseqs))

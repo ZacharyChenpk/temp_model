@@ -1,0 +1,2908 @@
+Loading cached dataset...
+Producing dataset...
+<class 'numpy.ndarray'>
+[{'X': [0, 1, 2, 3, 4, 5, 6, 7], 'Y': [0, 1, 2, 3, 4, 5, 6, 7, 8], 'Y_tree': <tree.Tree object at 0x000001C39545BEB8>}]
+[{'X': [0, 1, 2, 3, 4, 5, 6, 7], 'Y': [0, 1, 2, 3, 4, 5, 6, 7, 8], 'Y_tree': <tree.Tree object at 0x000001C39545BEB8>}]
+<class 'numpy.ndarray'>
+[]
+<class 'numpy.ndarray'>
+[{'X': [0, 1, 2, 3, 4, 5, 6, 7], 'Y': [0, 1, 2, 3, 4, 5, 6, 7, 8], 'Y_tree': <tree.Tree object at 0x000001C395468BA8>}]
+<class 'numpy.ndarray'>
+Args: Namespace(batch_size=1, bptt=70, chunk_size=16, clip=0.25, cuda=False, data='fakedata', dropout=0.4, emsize=512, encoderlr=30, epochs=8000, hidsize=512, log_interval=200, model='LSTM', nhid=1150, nlayers=3, nodesize=512, optimizer='sgd', philly=True, poslr=30, resume='', save='1568536955347527.pt', save_every=400, seed=1111, tied=True, when=[-1])
+Model total parameters: 10002433
+traindata [[{'X': [0, 1, 2, 3, 4, 5, 6, 7], 'Y': [0, 1, 2, 3, 4, 5, 6, 7, 8], 'Y_tree': <tree.Tree object at 0x000001C39545BEB8>}]]
+emb:  [tensor([[ 7.2603e-02,  4.8560e-02,  2.3800e-02,  ..., -7.1051e-02,
+          6.7546e-02, -2.0232e-03],
+        [ 2.3174e-02,  9.6429e-03, -7.4298e-02,  ..., -8.6794e-02,
+         -2.0801e-02,  9.5940e-02],
+        [ 2.6164e-02,  4.4758e-03,  4.3961e-02,  ..., -3.1586e-02,
+          5.3355e-02,  7.3915e-03],
+        ...,
+        [ 5.9060e-02,  4.5141e-03, -9.3629e-02,  ...,  8.7589e-02,
+         -8.3079e-02,  3.5222e-02],
+        [-4.1222e-02,  8.0173e-02,  2.3611e-02,  ...,  4.6145e-02,
+         -4.9725e-05, -6.7182e-02],
+        [ 2.0289e-02,  7.5191e-03, -3.3630e-02,  ...,  2.7541e-02,
+          7.4378e-02, -6.2578e-02]], grad_fn=<SqueezeBackward0>)]
+tree word sequence:
+you 
+    __1-<start>
+   /
+0-you
+
+tree word sequence:
+you banana 
+    __1-<start>___
+   /              \
+0-you           2-banana
+
+tree word sequence:
+Maybe banana 
+            __2-<start>___
+           /              \
+     ___1-you           3-banana
+    /
+0-Maybe
+
+tree word sequence:
+banana 
+                    __3-<start>___
+                   /              \
+             ___2-you           4-banana
+            /
+     ___1-Maybe
+    /
+0-<end>
+
+tree word sequence:
+have banana 
+                    _________4-<start>___
+                   /                     \
+             ___2-you__                5-banana
+            /          \
+     ___1-Maybe       3-have
+    /
+0-<end>
+
+tree word sequence:
+banana 
+                    _________________5-<start>___
+                   /                             \
+             ___2-you__________                6-banana
+            /                  \
+     ___1-Maybe            ___4-have
+    /                     /
+0-<end>               3-<end>
+
+tree word sequence:
+a 
+                    _________________5-<start>_______
+                   /                                 \
+             ___2-you__________                   _7-banana
+            /                  \                 /
+     ___1-Maybe            ___4-have           6-a
+    /                     /
+0-<end>               3-<end>
+
+tree word sequence:
+a 
+                            _________________6-<start>_______
+                           /                                 \
+             ___________3-you__________                   _8-banana
+            /                          \                 /
+     ___1-Maybe___                 ___5-have           7-a
+    /             \               /
+0-<end>         2-<end>       4-<end>
+
+tree word sequence:
+a 
+                            _________________________7-<start>_______
+                           /                                         \
+             ___________3-you__________                           _9-banana
+            /                          \                         /
+     ___1-Maybe___                 ___5-have___                8-a
+    /             \               /            \
+0-<end>         2-<end>       4-<end>        6-<end>
+
+tree word sequence:
+a . 
+                            _________________________7-<start>_______
+                           /                                         \
+             ___________3-you__________                           _9-banana_
+            /                          \                         /          \
+     ___1-Maybe___                 ___5-have___                8-a          10-.
+    /             \               /            \
+0-<end>         2-<end>       4-<end>        6-<end>
+
+tree word sequence:
+a 
+                            _________________________7-<start>_______
+                           /                                         \
+             ___________3-you__________                           _9-banana__________
+            /                          \                         /                   \
+     ___1-Maybe___                 ___5-have___                8-a               ____11-.
+    /             \               /            \                                /
+0-<end>         2-<end>       4-<end>        6-<end>                        10-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>________________
+                           /                                                  \
+             ___________3-you__________                                   _10-banana__________
+            /                          \                                 /                    \
+     ___1-Maybe___                 ___5-have___                     ___9-a                ____12-.
+    /             \               /            \                   /                     /
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>               11-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>________________
+                           /                                                  \
+             ___________3-you__________                                   _10-banana__________
+            /                          \                                 /                    \
+     ___1-Maybe___                 ___5-have___                     ___9-a                ____12-.___
+    /             \               /            \                   /                     /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>               11-<end>      13-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.___
+    /             \               /            \                   /         \                    /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>      14-<end>
+
+epoch: 1, pos_loss:-1.8155611753463745, decoder_loss:-1.555555820465088, sentence/s: 1
+emb:  [tensor([[ 7.2603e-02,  4.8560e-02,  2.3800e-02,  ..., -7.1051e-02,
+          6.7546e-02, -2.0232e-03],
+        [ 2.3174e-02,  9.6429e-03, -7.4298e-02,  ..., -8.6794e-02,
+         -2.0801e-02,  9.5940e-02],
+        [ 2.6164e-02,  4.4758e-03,  4.3961e-02,  ..., -3.1586e-02,
+          5.3355e-02,  7.3915e-03],
+        ...,
+        [ 5.9060e-02,  4.5141e-03, -9.3629e-02,  ...,  8.7589e-02,
+         -8.3079e-02,  3.5222e-02],
+        [-4.1222e-02,  8.0173e-02,  2.3611e-02,  ...,  4.6145e-02,
+         -4.9725e-05, -6.7182e-02],
+        [ 2.0289e-02,  7.5191e-03, -3.3630e-02,  ...,  2.7541e-02,
+          7.4378e-02, -6.2578e-02]], grad_fn=<SqueezeBackward0>)]
+tree word sequence:
+you 
+    __1-<start>
+   /
+0-you
+
+tree word sequence:
+Maybe 
+            __2-<start>
+           /
+     ___1-you
+    /
+0-Maybe
+
+tree word sequence:
+Maybe have 
+            _________3-<start>
+           /
+     ___1-you__
+    /          \
+0-Maybe       2-have
+
+tree word sequence:
+have 
+                    _________4-<start>
+                   /
+             ___2-you__
+            /          \
+     ___1-Maybe       3-have
+    /
+0-<end>
+
+tree word sequence:
+have banana 
+                    _________4-<start>___
+                   /                     \
+             ___2-you__                5-banana
+            /          \
+     ___1-Maybe       3-have
+    /
+0-<end>
+
+tree word sequence:
+have a 
+                    _________4-<start>_______
+                   /                         \
+             ___2-you__                   _6-banana
+            /          \                 /
+     ___1-Maybe       3-have           5-a
+    /
+0-<end>
+
+tree word sequence:
+have a . 
+                    _________4-<start>_______
+                   /                         \
+             ___2-you__                   _6-banana_
+            /          \                 /          \
+     ___1-Maybe       3-have           5-a          7-.
+    /
+0-<end>
+
+tree word sequence:
+a . 
+                    _________________5-<start>_______
+                   /                                 \
+             ___2-you__________                   _7-banana_
+            /                  \                 /          \
+     ___1-Maybe            ___4-have           6-a          8-.
+    /                     /
+0-<end>               3-<end>
+
+tree word sequence:
+a . 
+                            _________________6-<start>_______
+                           /                                 \
+             ___________3-you__________                   _8-banana_
+            /                          \                 /          \
+     ___1-Maybe___                 ___5-have           7-a          9-.
+    /             \               /
+0-<end>         2-<end>       4-<end>
+
+tree word sequence:
+. 
+                            _________________6-<start>_______________
+                           /                                         \
+             ___________3-you__________                           _9-banana_
+            /                          \                         /          \
+     ___1-Maybe___                 ___5-have                ___8-a          10-.
+    /             \               /                        /
+0-<end>         2-<end>       4-<end>                  7-<end>
+
+tree word sequence:
+. 
+                            _________________6-<start>________________________
+                           /                                                  \
+             ___________3-you__________                           _________10-banana_
+            /                          \                         /                   \
+     ___1-Maybe___                 ___5-have                ___8-a___                11-.
+    /             \               /                        /         \
+0-<end>         2-<end>       4-<end>                  7-<end>     9-<end>
+
+tree word sequence:
+
+                            _________________6-<start>________________________
+                           /                                                  \
+             ___________3-you__________                           _________10-banana__________
+            /                          \                         /                            \
+     ___1-Maybe___                 ___5-have                ___8-a___                     ____12-.
+    /             \               /                        /         \                   /
+0-<end>         2-<end>       4-<end>                  7-<end>     9-<end>           11-<end>
+
+tree word sequence:
+
+                            _________________6-<start>________________________
+                           /                                                  \
+             ___________3-you__________                           _________10-banana__________
+            /                          \                         /                            \
+     ___1-Maybe___                 ___5-have                ___8-a___                     ____12-.___
+    /             \               /                        /         \                   /           \
+0-<end>         2-<end>       4-<end>                  7-<end>     9-<end>           11-<end>      13-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.___
+    /             \               /            \                   /         \                    /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>      14-<end>
+
+epoch: 2, pos_loss:-1.9942179918289185, decoder_loss:-1.555555820465088, sentence/s: 1
+emb:  [tensor([[ 7.2603e-02,  4.8560e-02,  2.3800e-02,  ..., -7.1051e-02,
+          6.7546e-02, -2.0232e-03],
+        [ 2.3174e-02,  9.6429e-03, -7.4298e-02,  ..., -8.6794e-02,
+         -2.0801e-02,  9.5940e-02],
+        [ 2.6164e-02,  4.4758e-03,  4.3961e-02,  ..., -3.1586e-02,
+          5.3355e-02,  7.3915e-03],
+        ...,
+        [ 5.9060e-02,  4.5141e-03, -9.3629e-02,  ...,  8.7589e-02,
+         -8.3079e-02,  3.5222e-02],
+        [-4.1222e-02,  8.0173e-02,  2.3611e-02,  ...,  4.6145e-02,
+         -4.9725e-05, -6.7182e-02],
+        [ 2.0289e-02,  7.5191e-03, -3.3630e-02,  ...,  2.7541e-02,
+          7.4378e-02, -6.2578e-02]], grad_fn=<SqueezeBackward0>)]
+tree word sequence:
+you 
+    __1-<start>
+   /
+0-you
+
+tree word sequence:
+Maybe 
+            __2-<start>
+           /
+     ___1-you
+    /
+0-Maybe
+
+tree word sequence:
+Maybe have 
+            _________3-<start>
+           /
+     ___1-you__
+    /          \
+0-Maybe       2-have
+
+tree word sequence:
+have 
+                    _________4-<start>
+                   /
+             ___2-you__
+            /          \
+     ___1-Maybe       3-have
+    /
+0-<end>
+
+tree word sequence:
+have banana 
+                    _________4-<start>___
+                   /                     \
+             ___2-you__                5-banana
+            /          \
+     ___1-Maybe       3-have
+    /
+0-<end>
+
+tree word sequence:
+have banana 
+                            _________5-<start>___
+                           /                     \
+             ___________3-you__                6-banana
+            /                  \
+     ___1-Maybe___            4-have
+    /             \
+0-<end>         2-<end>
+
+tree word sequence:
+have a 
+                            _________5-<start>_______
+                           /                         \
+             ___________3-you__                   _7-banana
+            /                  \                 /
+     ___1-Maybe___            4-have           6-a
+    /             \
+0-<end>         2-<end>
+
+tree word sequence:
+have 
+                            _________5-<start>_______________
+                           /                                 \
+             ___________3-you__                           _8-banana
+            /                  \                         /
+     ___1-Maybe___            4-have                ___7-a
+    /             \                                /
+0-<end>         2-<end>                        6-<end>
+
+tree word sequence:
+
+                            _________________6-<start>_______________
+                           /                                         \
+             ___________3-you__________                           _9-banana
+            /                          \                         /
+     ___1-Maybe___                 ___5-have                ___8-a
+    /             \               /                        /
+0-<end>         2-<end>       4-<end>                  7-<end>
+
+tree word sequence:
+
+                            _________________6-<start>________________________
+                           /                                                  \
+             ___________3-you__________                           _________10-banana
+            /                          \                         /
+     ___1-Maybe___                 ___5-have                ___8-a___
+    /             \               /                        /         \
+0-<end>         2-<end>       4-<end>                  7-<end>     9-<end>
+
+tree word sequence:
+. 
+                            _________________6-<start>________________________
+                           /                                                  \
+             ___________3-you__________                           _________10-banana_
+            /                          \                         /                   \
+     ___1-Maybe___                 ___5-have                ___8-a___                11-.
+    /             \               /                        /         \
+0-<end>         2-<end>       4-<end>                  7-<end>     9-<end>
+
+tree word sequence:
+
+                            _________________6-<start>________________________
+                           /                                                  \
+             ___________3-you__________                           _________10-banana__________
+            /                          \                         /                            \
+     ___1-Maybe___                 ___5-have                ___8-a___                     ____12-.
+    /             \               /                        /         \                   /
+0-<end>         2-<end>       4-<end>                  7-<end>     9-<end>           11-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.
+    /             \               /            \                   /         \                    /
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.___
+    /             \               /            \                   /         \                    /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>      14-<end>
+
+epoch: 3, pos_loss:-1.5907151699066162, decoder_loss:-1.555555820465088, sentence/s: 0
+emb:  [tensor([[ 7.2603e-02,  4.8560e-02,  2.3800e-02,  ..., -7.1051e-02,
+          6.7546e-02, -2.0232e-03],
+        [ 2.3174e-02,  9.6429e-03, -7.4298e-02,  ..., -8.6794e-02,
+         -2.0801e-02,  9.5940e-02],
+        [ 2.6164e-02,  4.4758e-03,  4.3961e-02,  ..., -3.1586e-02,
+          5.3355e-02,  7.3915e-03],
+        ...,
+        [ 5.9060e-02,  4.5141e-03, -9.3629e-02,  ...,  8.7589e-02,
+         -8.3079e-02,  3.5222e-02],
+        [-4.1222e-02,  8.0173e-02,  2.3611e-02,  ...,  4.6145e-02,
+         -4.9725e-05, -6.7182e-02],
+        [ 2.0289e-02,  7.5191e-03, -3.3630e-02,  ...,  2.7541e-02,
+          7.4378e-02, -6.2578e-02]], grad_fn=<SqueezeBackward0>)]
+tree word sequence:
+you 
+    __1-<start>
+   /
+0-you
+
+tree word sequence:
+you banana 
+    __1-<start>___
+   /              \
+0-you           2-banana
+
+tree word sequence:
+Maybe banana 
+            __2-<start>___
+           /              \
+     ___1-you           3-banana
+    /
+0-Maybe
+
+tree word sequence:
+Maybe a 
+            __2-<start>_______
+           /                  \
+     ___1-you              _4-banana
+    /                     /
+0-Maybe                 3-a
+
+tree word sequence:
+Maybe 
+            __2-<start>_______________
+           /                          \
+     ___1-you                      _5-banana
+    /                             /
+0-Maybe                      ___4-a
+                            /
+                        3-<end>
+
+tree word sequence:
+Maybe 
+            __2-<start>_______________________
+           /                                  \
+     ___1-you                      _________6-banana
+    /                             /
+0-Maybe                      ___4-a___
+                            /         \
+                        3-<end>     5-<end>
+
+tree word sequence:
+
+                    __3-<start>_______________________
+                   /                                  \
+             ___2-you                      _________7-banana
+            /                             /
+     ___1-Maybe                      ___5-a___
+    /                               /         \
+0-<end>                         4-<end>     6-<end>
+
+tree word sequence:
+have 
+                    _________4-<start>_______________________
+                   /                                         \
+             ___2-you__                           _________8-banana
+            /          \                         /
+     ___1-Maybe       3-have                ___6-a___
+    /                                      /         \
+0-<end>                                5-<end>     7-<end>
+
+tree word sequence:
+
+                    _________________5-<start>_______________________
+                   /                                                 \
+             ___2-you__________                           _________9-banana
+            /                  \                         /
+     ___1-Maybe            ___4-have                ___7-a___
+    /                     /                        /         \
+0-<end>               3-<end>                  6-<end>     8-<end>
+
+tree word sequence:
+
+                    _________________________6-<start>________________________
+                   /                                                          \
+             ___2-you__________                                   _________10-banana
+            /                  \                                 /
+     ___1-Maybe            ___4-have___                     ___8-a___
+    /                     /            \                   /         \
+0-<end>               3-<end>        5-<end>           7-<end>     9-<end>
+
+tree word sequence:
+. 
+                    _________________________6-<start>________________________
+                   /                                                          \
+             ___2-you__________                                   _________10-banana_
+            /                  \                                 /                   \
+     ___1-Maybe            ___4-have___                     ___8-a___                11-.
+    /                     /            \                   /         \
+0-<end>               3-<end>        5-<end>           7-<end>     9-<end>
+
+tree word sequence:
+. 
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana_
+            /                          \                                 /                    \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                 12-.
+    /             \               /            \                   /         \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.
+    /             \               /            \                   /         \                    /
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.___
+    /             \               /            \                   /         \                    /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>      14-<end>
+
+epoch: 4, pos_loss:-1.8672045469284058, decoder_loss:-1.555555820465088, sentence/s: 0
+emb:  [tensor([[ 7.2603e-02,  4.8560e-02,  2.3800e-02,  ..., -7.1051e-02,
+          6.7546e-02, -2.0232e-03],
+        [ 2.3174e-02,  9.6429e-03, -7.4298e-02,  ..., -8.6794e-02,
+         -2.0801e-02,  9.5940e-02],
+        [ 2.6164e-02,  4.4758e-03,  4.3961e-02,  ..., -3.1586e-02,
+          5.3355e-02,  7.3915e-03],
+        ...,
+        [ 5.9060e-02,  4.5141e-03, -9.3629e-02,  ...,  8.7589e-02,
+         -8.3079e-02,  3.5222e-02],
+        [-4.1222e-02,  8.0173e-02,  2.3611e-02,  ...,  4.6145e-02,
+         -4.9725e-05, -6.7182e-02],
+        [ 2.0289e-02,  7.5191e-03, -3.3630e-02,  ...,  2.7541e-02,
+          7.4378e-02, -6.2578e-02]], grad_fn=<SqueezeBackward0>)]
+tree word sequence:
+you 
+    __1-<start>
+   /
+0-you
+
+tree word sequence:
+you banana 
+    __1-<start>___
+   /              \
+0-you           2-banana
+
+tree word sequence:
+you a 
+    __1-<start>_______
+   /                  \
+0-you              _3-banana
+                  /
+                2-a
+
+tree word sequence:
+you a . 
+    __1-<start>_______
+   /                  \
+0-you              _3-banana_
+                  /          \
+                2-a          4-.
+
+tree word sequence:
+you . 
+    __1-<start>_______________
+   /                          \
+0-you                      _4-banana_
+                          /          \
+                     ___3-a          5-.
+                    /
+                2-<end>
+
+tree word sequence:
+you . 
+    __1-<start>_______________________
+   /                                  \
+0-you                      _________5-banana_
+                          /                  \
+                     ___3-a___               6-.
+                    /         \
+                2-<end>     4-<end>
+
+tree word sequence:
+Maybe . 
+            __2-<start>_______________________
+           /                                  \
+     ___1-you                      _________6-banana_
+    /                             /                  \
+0-Maybe                      ___4-a___               7-.
+                            /         \
+                        3-<end>     5-<end>
+
+tree word sequence:
+. 
+                    __3-<start>_______________________
+                   /                                  \
+             ___2-you                      _________7-banana_
+            /                             /                  \
+     ___1-Maybe                      ___5-a___               8-.
+    /                               /         \
+0-<end>                         4-<end>     6-<end>
+
+tree word sequence:
+have . 
+                    _________4-<start>_______________________
+                   /                                         \
+             ___2-you__                           _________8-banana_
+            /          \                         /                  \
+     ___1-Maybe       3-have                ___6-a___               9-.
+    /                                      /         \
+0-<end>                                5-<end>     7-<end>
+
+tree word sequence:
+. 
+                    _________________5-<start>_______________________
+                   /                                                 \
+             ___2-you__________                           _________9-banana_
+            /                  \                         /                  \
+     ___1-Maybe            ___4-have                ___7-a___               10-.
+    /                     /                        /         \
+0-<end>               3-<end>                  6-<end>     8-<end>
+
+tree word sequence:
+. 
+                            _________________6-<start>________________________
+                           /                                                  \
+             ___________3-you__________                           _________10-banana_
+            /                          \                         /                   \
+     ___1-Maybe___                 ___5-have                ___8-a___                11-.
+    /             \               /                        /         \
+0-<end>         2-<end>       4-<end>                  7-<end>     9-<end>
+
+tree word sequence:
+. 
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana_
+            /                          \                                 /                    \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                 12-.
+    /             \               /            \                   /         \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.
+    /             \               /            \                   /         \                    /
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.___
+    /             \               /            \                   /         \                    /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>      14-<end>
+
+epoch: 5, pos_loss:-2.422539710998535, decoder_loss:-1.555555820465088, sentence/s: 0
+emb:  [tensor([[ 7.2603e-02,  4.8560e-02,  2.3800e-02,  ..., -7.1051e-02,
+          6.7546e-02, -2.0232e-03],
+        [ 2.3174e-02,  9.6429e-03, -7.4298e-02,  ..., -8.6794e-02,
+         -2.0801e-02,  9.5940e-02],
+        [ 2.6164e-02,  4.4758e-03,  4.3961e-02,  ..., -3.1586e-02,
+          5.3355e-02,  7.3915e-03],
+        ...,
+        [ 5.9060e-02,  4.5141e-03, -9.3629e-02,  ...,  8.7589e-02,
+         -8.3079e-02,  3.5222e-02],
+        [-4.1222e-02,  8.0173e-02,  2.3611e-02,  ...,  4.6145e-02,
+         -4.9725e-05, -6.7182e-02],
+        [ 2.0289e-02,  7.5191e-03, -3.3630e-02,  ...,  2.7541e-02,
+          7.4378e-02, -6.2578e-02]], grad_fn=<SqueezeBackward0>)]
+tree word sequence:
+you 
+    __1-<start>
+   /
+0-you
+
+tree word sequence:
+Maybe 
+            __2-<start>
+           /
+     ___1-you
+    /
+0-Maybe
+
+tree word sequence:
+
+                    __3-<start>
+                   /
+             ___2-you
+            /
+     ___1-Maybe
+    /
+0-<end>
+
+tree word sequence:
+
+                            __4-<start>
+                           /
+             ___________3-you
+            /
+     ___1-Maybe___
+    /             \
+0-<end>         2-<end>
+
+tree word sequence:
+have 
+                            _________5-<start>
+                           /
+             ___________3-you__
+            /                  \
+     ___1-Maybe___            4-have
+    /             \
+0-<end>         2-<end>
+
+tree word sequence:
+have banana 
+                            _________5-<start>___
+                           /                     \
+             ___________3-you__                6-banana
+            /                  \
+     ___1-Maybe___            4-have
+    /             \
+0-<end>         2-<end>
+
+tree word sequence:
+have a 
+                            _________5-<start>_______
+                           /                         \
+             ___________3-you__                   _7-banana
+            /                  \                 /
+     ___1-Maybe___            4-have           6-a
+    /             \
+0-<end>         2-<end>
+
+tree word sequence:
+a 
+                            _________________6-<start>_______
+                           /                                 \
+             ___________3-you__________                   _8-banana
+            /                          \                 /
+     ___1-Maybe___                 ___5-have           7-a
+    /             \               /
+0-<end>         2-<end>       4-<end>
+
+tree word sequence:
+
+                            _________________6-<start>_______________
+                           /                                         \
+             ___________3-you__________                           _9-banana
+            /                          \                         /
+     ___1-Maybe___                 ___5-have                ___8-a
+    /             \               /                        /
+0-<end>         2-<end>       4-<end>                  7-<end>
+
+tree word sequence:
+. 
+                            _________________6-<start>_______________
+                           /                                         \
+             ___________3-you__________                           _9-banana_
+            /                          \                         /          \
+     ___1-Maybe___                 ___5-have                ___8-a          10-.
+    /             \               /                        /
+0-<end>         2-<end>       4-<end>                  7-<end>
+
+tree word sequence:
+
+                            _________________6-<start>_______________
+                           /                                         \
+             ___________3-you__________                           _9-banana__________
+            /                          \                         /                   \
+     ___1-Maybe___                 ___5-have                ___8-a               ____11-.
+    /             \               /                        /                    /
+0-<end>         2-<end>       4-<end>                  7-<end>              10-<end>
+
+tree word sequence:
+
+                            _________________6-<start>________________________
+                           /                                                  \
+             ___________3-you__________                           _________10-banana__________
+            /                          \                         /                            \
+     ___1-Maybe___                 ___5-have                ___8-a___                     ____12-.
+    /             \               /                        /         \                   /
+0-<end>         2-<end>       4-<end>                  7-<end>     9-<end>           11-<end>
+
+tree word sequence:
+
+                            _________________6-<start>________________________
+                           /                                                  \
+             ___________3-you__________                           _________10-banana__________
+            /                          \                         /                            \
+     ___1-Maybe___                 ___5-have                ___8-a___                     ____12-.___
+    /             \               /                        /         \                   /           \
+0-<end>         2-<end>       4-<end>                  7-<end>     9-<end>           11-<end>      13-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.___
+    /             \               /            \                   /         \                    /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>      14-<end>
+
+epoch: 6, pos_loss:-2.0796923637390137, decoder_loss:-1.555555820465088, sentence/s: 0
+emb:  [tensor([[ 7.2603e-02,  4.8560e-02,  2.3800e-02,  ..., -7.1051e-02,
+          6.7546e-02, -2.0232e-03],
+        [ 2.3174e-02,  9.6429e-03, -7.4298e-02,  ..., -8.6794e-02,
+         -2.0801e-02,  9.5940e-02],
+        [ 2.6164e-02,  4.4758e-03,  4.3961e-02,  ..., -3.1586e-02,
+          5.3355e-02,  7.3915e-03],
+        ...,
+        [ 5.9060e-02,  4.5141e-03, -9.3629e-02,  ...,  8.7589e-02,
+         -8.3079e-02,  3.5222e-02],
+        [-4.1222e-02,  8.0173e-02,  2.3611e-02,  ...,  4.6145e-02,
+         -4.9725e-05, -6.7182e-02],
+        [ 2.0289e-02,  7.5191e-03, -3.3630e-02,  ...,  2.7541e-02,
+          7.4378e-02, -6.2578e-02]], grad_fn=<SqueezeBackward0>)]
+tree word sequence:
+you 
+    __1-<start>
+   /
+0-you
+
+tree word sequence:
+you banana 
+    __1-<start>___
+   /              \
+0-you           2-banana
+
+tree word sequence:
+Maybe banana 
+            __2-<start>___
+           /              \
+     ___1-you           3-banana
+    /
+0-Maybe
+
+tree word sequence:
+banana 
+                    __3-<start>___
+                   /              \
+             ___2-you           4-banana
+            /
+     ___1-Maybe
+    /
+0-<end>
+
+tree word sequence:
+have banana 
+                    _________4-<start>___
+                   /                     \
+             ___2-you__                5-banana
+            /          \
+     ___1-Maybe       3-have
+    /
+0-<end>
+
+tree word sequence:
+have a 
+                    _________4-<start>_______
+                   /                         \
+             ___2-you__                   _6-banana
+            /          \                 /
+     ___1-Maybe       3-have           5-a
+    /
+0-<end>
+
+tree word sequence:
+have a . 
+                    _________4-<start>_______
+                   /                         \
+             ___2-you__                   _6-banana_
+            /          \                 /          \
+     ___1-Maybe       3-have           5-a          7-.
+    /
+0-<end>
+
+tree word sequence:
+have a 
+                    _________4-<start>_______
+                   /                         \
+             ___2-you__                   _6-banana_________
+            /          \                 /                  \
+     ___1-Maybe       3-have           5-a               ___8-.
+    /                                                   /
+0-<end>                                             7-<end>
+
+tree word sequence:
+have a 
+                            _________5-<start>_______
+                           /                         \
+             ___________3-you__                   _7-banana_________
+            /                  \                 /                  \
+     ___1-Maybe___            4-have           6-a               ___9-.
+    /             \                                             /
+0-<end>         2-<end>                                     8-<end>
+
+tree word sequence:
+a 
+                            _________________6-<start>_______
+                           /                                 \
+             ___________3-you__________                   _8-banana_________
+            /                          \                 /                  \
+     ___1-Maybe___                 ___5-have           7-a               ___10-.
+    /             \               /                                     /
+0-<end>         2-<end>       4-<end>                               9-<end>
+
+tree word sequence:
+a 
+                            _________________6-<start>_______
+                           /                                 \
+             ___________3-you__________                   _8-banana_________
+            /                          \                 /                  \
+     ___1-Maybe___                 ___5-have           7-a               ___10-.___
+    /             \               /                                     /          \
+0-<end>         2-<end>       4-<end>                               9-<end>      11-<end>
+
+tree word sequence:
+
+                            _________________6-<start>_______________
+                           /                                         \
+             ___________3-you__________                           _9-banana__________
+            /                          \                         /                   \
+     ___1-Maybe___                 ___5-have                ___8-a               ____11-.___
+    /             \               /                        /                    /           \
+0-<end>         2-<end>       4-<end>                  7-<end>              10-<end>      12-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>________________
+                           /                                                  \
+             ___________3-you__________                                   _10-banana__________
+            /                          \                                 /                    \
+     ___1-Maybe___                 ___5-have___                     ___9-a                ____12-.___
+    /             \               /            \                   /                     /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>               11-<end>      13-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.___
+    /             \               /            \                   /         \                    /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>      14-<end>
+
+epoch: 7, pos_loss:-1.4707473516464233, decoder_loss:-1.555555820465088, sentence/s: 0
+emb:  [tensor([[ 7.2603e-02,  4.8560e-02,  2.3800e-02,  ..., -7.1051e-02,
+          6.7546e-02, -2.0232e-03],
+        [ 2.3174e-02,  9.6429e-03, -7.4298e-02,  ..., -8.6794e-02,
+         -2.0801e-02,  9.5940e-02],
+        [ 2.6164e-02,  4.4758e-03,  4.3961e-02,  ..., -3.1586e-02,
+          5.3355e-02,  7.3915e-03],
+        ...,
+        [ 5.9060e-02,  4.5141e-03, -9.3629e-02,  ...,  8.7589e-02,
+         -8.3079e-02,  3.5222e-02],
+        [-4.1222e-02,  8.0173e-02,  2.3611e-02,  ...,  4.6145e-02,
+         -4.9725e-05, -6.7182e-02],
+        [ 2.0289e-02,  7.5191e-03, -3.3630e-02,  ...,  2.7541e-02,
+          7.4378e-02, -6.2578e-02]], grad_fn=<SqueezeBackward0>)]
+tree word sequence:
+you 
+    __1-<start>
+   /
+0-you
+
+tree word sequence:
+you banana 
+    __1-<start>___
+   /              \
+0-you           2-banana
+
+tree word sequence:
+you a 
+    __1-<start>_______
+   /                  \
+0-you              _3-banana
+                  /
+                2-a
+
+tree word sequence:
+you a . 
+    __1-<start>_______
+   /                  \
+0-you              _3-banana_
+                  /          \
+                2-a          4-.
+
+tree word sequence:
+Maybe a . 
+            __2-<start>_______
+           /                  \
+     ___1-you              _4-banana_
+    /                     /          \
+0-Maybe                 3-a          5-.
+
+tree word sequence:
+Maybe a 
+            __2-<start>_______
+           /                  \
+     ___1-you              _4-banana_________
+    /                     /                  \
+0-Maybe                 3-a               ___6-.
+                                         /
+                                     5-<end>
+
+tree word sequence:
+Maybe a 
+            __2-<start>_______
+           /                  \
+     ___1-you              _4-banana_________
+    /                     /                  \
+0-Maybe                 3-a               ___6-.___
+                                         /         \
+                                     5-<end>     7-<end>
+
+tree word sequence:
+a 
+                    __3-<start>_______
+                   /                  \
+             ___2-you              _5-banana_________
+            /                     /                  \
+     ___1-Maybe                 4-a               ___7-.___
+    /                                            /         \
+0-<end>                                      6-<end>     8-<end>
+
+tree word sequence:
+a 
+                            __4-<start>_______
+                           /                  \
+             ___________3-you              _6-banana_________
+            /                             /                  \
+     ___1-Maybe___                      5-a               ___8-.___
+    /             \                                      /         \
+0-<end>         2-<end>                              7-<end>     9-<end>
+
+tree word sequence:
+have a 
+                            _________5-<start>_______
+                           /                         \
+             ___________3-you__                   _7-banana_________
+            /                  \                 /                  \
+     ___1-Maybe___            4-have           6-a               ___9-.___
+    /             \                                             /         \
+0-<end>         2-<end>                                     8-<end>     10-<end>
+
+tree word sequence:
+a 
+                            _________________6-<start>_______
+                           /                                 \
+             ___________3-you__________                   _8-banana_________
+            /                          \                 /                  \
+     ___1-Maybe___                 ___5-have           7-a               ___10-.___
+    /             \               /                                     /          \
+0-<end>         2-<end>       4-<end>                               9-<end>      11-<end>
+
+tree word sequence:
+
+                            _________________6-<start>_______________
+                           /                                         \
+             ___________3-you__________                           _9-banana__________
+            /                          \                         /                   \
+     ___1-Maybe___                 ___5-have                ___8-a               ____11-.___
+    /             \               /                        /                    /           \
+0-<end>         2-<end>       4-<end>                  7-<end>              10-<end>      12-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>________________
+                           /                                                  \
+             ___________3-you__________                                   _10-banana__________
+            /                          \                                 /                    \
+     ___1-Maybe___                 ___5-have___                     ___9-a                ____12-.___
+    /             \               /            \                   /                     /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>               11-<end>      13-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.___
+    /             \               /            \                   /         \                    /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>      14-<end>
+
+epoch: 8, pos_loss:-1.929672122001648, decoder_loss:-1.555555820465088, sentence/s: 0
+emb:  [tensor([[ 7.2603e-02,  4.8560e-02,  2.3800e-02,  ..., -7.1051e-02,
+          6.7546e-02, -2.0232e-03],
+        [ 2.3174e-02,  9.6429e-03, -7.4298e-02,  ..., -8.6794e-02,
+         -2.0801e-02,  9.5940e-02],
+        [ 2.6164e-02,  4.4758e-03,  4.3961e-02,  ..., -3.1586e-02,
+          5.3355e-02,  7.3915e-03],
+        ...,
+        [ 5.9060e-02,  4.5141e-03, -9.3629e-02,  ...,  8.7589e-02,
+         -8.3079e-02,  3.5222e-02],
+        [-4.1222e-02,  8.0173e-02,  2.3611e-02,  ...,  4.6145e-02,
+         -4.9725e-05, -6.7182e-02],
+        [ 2.0289e-02,  7.5191e-03, -3.3630e-02,  ...,  2.7541e-02,
+          7.4378e-02, -6.2578e-02]], grad_fn=<SqueezeBackward0>)]
+tree word sequence:
+you 
+    __1-<start>
+   /
+0-you
+
+tree word sequence:
+Maybe 
+            __2-<start>
+           /
+     ___1-you
+    /
+0-Maybe
+
+tree word sequence:
+Maybe banana 
+            __2-<start>___
+           /              \
+     ___1-you           3-banana
+    /
+0-Maybe
+
+tree word sequence:
+Maybe a 
+            __2-<start>_______
+           /                  \
+     ___1-you              _4-banana
+    /                     /
+0-Maybe                 3-a
+
+tree word sequence:
+Maybe 
+            __2-<start>_______________
+           /                          \
+     ___1-you                      _5-banana
+    /                             /
+0-Maybe                      ___4-a
+                            /
+                        3-<end>
+
+tree word sequence:
+Maybe 
+            __2-<start>_______________________
+           /                                  \
+     ___1-you                      _________6-banana
+    /                             /
+0-Maybe                      ___4-a___
+                            /         \
+                        3-<end>     5-<end>
+
+tree word sequence:
+
+                    __3-<start>_______________________
+                   /                                  \
+             ___2-you                      _________7-banana
+            /                             /
+     ___1-Maybe                      ___5-a___
+    /                               /         \
+0-<end>                         4-<end>     6-<end>
+
+tree word sequence:
+
+                            __4-<start>_______________________
+                           /                                  \
+             ___________3-you                      _________8-banana
+            /                                     /
+     ___1-Maybe___                           ___6-a___
+    /             \                         /         \
+0-<end>         2-<end>                 5-<end>     7-<end>
+
+tree word sequence:
+. 
+                            __4-<start>_______________________
+                           /                                  \
+             ___________3-you                      _________8-banana_
+            /                                     /                  \
+     ___1-Maybe___                           ___6-a___               9-.
+    /             \                         /         \
+0-<end>         2-<end>                 5-<end>     7-<end>
+
+tree word sequence:
+have . 
+                            _________5-<start>_______________________
+                           /                                         \
+             ___________3-you__                           _________9-banana_
+            /                  \                         /                  \
+     ___1-Maybe___            4-have                ___7-a___               10-.
+    /             \                                /         \
+0-<end>         2-<end>                        6-<end>     8-<end>
+
+tree word sequence:
+have 
+                            _________5-<start>_______________________
+                           /                                         \
+             ___________3-you__                           _________9-banana__________
+            /                  \                         /                           \
+     ___1-Maybe___            4-have                ___7-a___                    ____11-.
+    /             \                                /         \                  /
+0-<end>         2-<end>                        6-<end>     8-<end>          10-<end>
+
+tree word sequence:
+have 
+                            _________5-<start>_______________________
+                           /                                         \
+             ___________3-you__                           _________9-banana__________
+            /                  \                         /                           \
+     ___1-Maybe___            4-have                ___7-a___                    ____11-.___
+    /             \                                /         \                  /           \
+0-<end>         2-<end>                        6-<end>     8-<end>          10-<end>      12-<end>
+
+tree word sequence:
+
+                            _________________6-<start>________________________
+                           /                                                  \
+             ___________3-you__________                           _________10-banana__________
+            /                          \                         /                            \
+     ___1-Maybe___                 ___5-have                ___8-a___                     ____12-.___
+    /             \               /                        /         \                   /           \
+0-<end>         2-<end>       4-<end>                  7-<end>     9-<end>           11-<end>      13-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.___
+    /             \               /            \                   /         \                    /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>      14-<end>
+
+epoch: 9, pos_loss:-1.8831427097320557, decoder_loss:-1.555555820465088, sentence/s: 0
+emb:  [tensor([[ 7.2603e-02,  4.8560e-02,  2.3800e-02,  ..., -7.1051e-02,
+          6.7546e-02, -2.0232e-03],
+        [ 2.3174e-02,  9.6429e-03, -7.4298e-02,  ..., -8.6794e-02,
+         -2.0801e-02,  9.5940e-02],
+        [ 2.6164e-02,  4.4758e-03,  4.3961e-02,  ..., -3.1586e-02,
+          5.3355e-02,  7.3915e-03],
+        ...,
+        [ 5.9060e-02,  4.5141e-03, -9.3629e-02,  ...,  8.7589e-02,
+         -8.3079e-02,  3.5222e-02],
+        [-4.1222e-02,  8.0173e-02,  2.3611e-02,  ...,  4.6145e-02,
+         -4.9725e-05, -6.7182e-02],
+        [ 2.0289e-02,  7.5191e-03, -3.3630e-02,  ...,  2.7541e-02,
+          7.4378e-02, -6.2578e-02]], grad_fn=<SqueezeBackward0>)]
+tree word sequence:
+you 
+    __1-<start>
+   /
+0-you
+
+tree word sequence:
+Maybe 
+            __2-<start>
+           /
+     ___1-you
+    /
+0-Maybe
+
+tree word sequence:
+
+                    __3-<start>
+                   /
+             ___2-you
+            /
+     ___1-Maybe
+    /
+0-<end>
+
+tree word sequence:
+banana 
+                    __3-<start>___
+                   /              \
+             ___2-you           4-banana
+            /
+     ___1-Maybe
+    /
+0-<end>
+
+tree word sequence:
+a 
+                    __3-<start>_______
+                   /                  \
+             ___2-you              _5-banana
+            /                     /
+     ___1-Maybe                 4-a
+    /
+0-<end>
+
+tree word sequence:
+a . 
+                    __3-<start>_______
+                   /                  \
+             ___2-you              _5-banana_
+            /                     /          \
+     ___1-Maybe                 4-a          6-.
+    /
+0-<end>
+
+tree word sequence:
+. 
+                    __3-<start>_______________
+                   /                          \
+             ___2-you                      _6-banana_
+            /                             /          \
+     ___1-Maybe                      ___5-a          7-.
+    /                               /
+0-<end>                         4-<end>
+
+tree word sequence:
+
+                    __3-<start>_______________
+                   /                          \
+             ___2-you                      _6-banana_________
+            /                             /                  \
+     ___1-Maybe                      ___5-a               ___8-.
+    /                               /                    /
+0-<end>                         4-<end>              7-<end>
+
+tree word sequence:
+
+                    __3-<start>_______________________
+                   /                                  \
+             ___2-you                      _________7-banana_________
+            /                             /                          \
+     ___1-Maybe                      ___5-a___                    ___9-.
+    /                               /         \                  /
+0-<end>                         4-<end>     6-<end>          8-<end>
+
+tree word sequence:
+have 
+                    _________4-<start>_______________________
+                   /                                         \
+             ___2-you__                           _________8-banana_________
+            /          \                         /                          \
+     ___1-Maybe       3-have                ___6-a___                    ___10-.
+    /                                      /         \                  /
+0-<end>                                5-<end>     7-<end>          9-<end>
+
+tree word sequence:
+have 
+                            _________5-<start>_______________________
+                           /                                         \
+             ___________3-you__                           _________9-banana__________
+            /                  \                         /                           \
+     ___1-Maybe___            4-have                ___7-a___                    ____11-.
+    /             \                                /         \                  /
+0-<end>         2-<end>                        6-<end>     8-<end>          10-<end>
+
+tree word sequence:
+have 
+                            _________5-<start>_______________________
+                           /                                         \
+             ___________3-you__                           _________9-banana__________
+            /                  \                         /                           \
+     ___1-Maybe___            4-have                ___7-a___                    ____11-.___
+    /             \                                /         \                  /           \
+0-<end>         2-<end>                        6-<end>     8-<end>          10-<end>      12-<end>
+
+tree word sequence:
+
+                            _________________6-<start>________________________
+                           /                                                  \
+             ___________3-you__________                           _________10-banana__________
+            /                          \                         /                            \
+     ___1-Maybe___                 ___5-have                ___8-a___                     ____12-.___
+    /             \               /                        /         \                   /           \
+0-<end>         2-<end>       4-<end>                  7-<end>     9-<end>           11-<end>      13-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.___
+    /             \               /            \                   /         \                    /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>      14-<end>
+
+epoch: 10, pos_loss:-2.037637948989868, decoder_loss:-1.555555820465088, sentence/s: 0
+emb:  [tensor([[ 7.2603e-02,  4.8560e-02,  2.3800e-02,  ..., -7.1051e-02,
+          6.7546e-02, -2.0232e-03],
+        [ 2.3174e-02,  9.6429e-03, -7.4298e-02,  ..., -8.6794e-02,
+         -2.0801e-02,  9.5940e-02],
+        [ 2.6164e-02,  4.4758e-03,  4.3961e-02,  ..., -3.1586e-02,
+          5.3355e-02,  7.3915e-03],
+        ...,
+        [ 5.9060e-02,  4.5141e-03, -9.3629e-02,  ...,  8.7589e-02,
+         -8.3079e-02,  3.5222e-02],
+        [-4.1222e-02,  8.0173e-02,  2.3611e-02,  ...,  4.6145e-02,
+         -4.9725e-05, -6.7182e-02],
+        [ 2.0289e-02,  7.5191e-03, -3.3630e-02,  ...,  2.7541e-02,
+          7.4378e-02, -6.2578e-02]], grad_fn=<SqueezeBackward0>)]
+tree word sequence:
+you 
+    __1-<start>
+   /
+0-you
+
+tree word sequence:
+you banana 
+    __1-<start>___
+   /              \
+0-you           2-banana
+
+tree word sequence:
+Maybe banana 
+            __2-<start>___
+           /              \
+     ___1-you           3-banana
+    /
+0-Maybe
+
+tree word sequence:
+Maybe have banana 
+            _________3-<start>___
+           /                     \
+     ___1-you__                4-banana
+    /          \
+0-Maybe       2-have
+
+tree word sequence:
+have banana 
+                    _________4-<start>___
+                   /                     \
+             ___2-you__                5-banana
+            /          \
+     ___1-Maybe       3-have
+    /
+0-<end>
+
+tree word sequence:
+banana 
+                    _________________5-<start>___
+                   /                             \
+             ___2-you__________                6-banana
+            /                  \
+     ___1-Maybe            ___4-have
+    /                     /
+0-<end>               3-<end>
+
+tree word sequence:
+banana 
+                            _________________6-<start>___
+                           /                             \
+             ___________3-you__________                7-banana
+            /                          \
+     ___1-Maybe___                 ___5-have
+    /             \               /
+0-<end>         2-<end>       4-<end>
+
+tree word sequence:
+a 
+                            _________________6-<start>_______
+                           /                                 \
+             ___________3-you__________                   _8-banana
+            /                          \                 /
+     ___1-Maybe___                 ___5-have           7-a
+    /             \               /
+0-<end>         2-<end>       4-<end>
+
+tree word sequence:
+a 
+                            _________________________7-<start>_______
+                           /                                         \
+             ___________3-you__________                           _9-banana
+            /                          \                         /
+     ___1-Maybe___                 ___5-have___                8-a
+    /             \               /            \
+0-<end>         2-<end>       4-<end>        6-<end>
+
+tree word sequence:
+a . 
+                            _________________________7-<start>_______
+                           /                                         \
+             ___________3-you__________                           _9-banana_
+            /                          \                         /          \
+     ___1-Maybe___                 ___5-have___                8-a          10-.
+    /             \               /            \
+0-<end>         2-<end>       4-<end>        6-<end>
+
+tree word sequence:
+a 
+                            _________________________7-<start>_______
+                           /                                         \
+             ___________3-you__________                           _9-banana__________
+            /                          \                         /                   \
+     ___1-Maybe___                 ___5-have___                8-a               ____11-.
+    /             \               /            \                                /
+0-<end>         2-<end>       4-<end>        6-<end>                        10-<end>
+
+tree word sequence:
+a 
+                            _________________________7-<start>_______
+                           /                                         \
+             ___________3-you__________                           _9-banana__________
+            /                          \                         /                   \
+     ___1-Maybe___                 ___5-have___                8-a               ____11-.___
+    /             \               /            \                                /           \
+0-<end>         2-<end>       4-<end>        6-<end>                        10-<end>      12-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>________________
+                           /                                                  \
+             ___________3-you__________                                   _10-banana__________
+            /                          \                                 /                    \
+     ___1-Maybe___                 ___5-have___                     ___9-a                ____12-.___
+    /             \               /            \                   /                     /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>               11-<end>      13-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.___
+    /             \               /            \                   /         \                    /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>      14-<end>
+
+epoch: 11, pos_loss:-1.905808925628662, decoder_loss:-1.555555820465088, sentence/s: 0
+emb:  [tensor([[ 7.2603e-02,  4.8560e-02,  2.3800e-02,  ..., -7.1051e-02,
+          6.7546e-02, -2.0232e-03],
+        [ 2.3174e-02,  9.6429e-03, -7.4298e-02,  ..., -8.6794e-02,
+         -2.0801e-02,  9.5940e-02],
+        [ 2.6164e-02,  4.4758e-03,  4.3961e-02,  ..., -3.1586e-02,
+          5.3355e-02,  7.3915e-03],
+        ...,
+        [ 5.9060e-02,  4.5141e-03, -9.3629e-02,  ...,  8.7589e-02,
+         -8.3079e-02,  3.5222e-02],
+        [-4.1222e-02,  8.0173e-02,  2.3611e-02,  ...,  4.6145e-02,
+         -4.9725e-05, -6.7182e-02],
+        [ 2.0289e-02,  7.5191e-03, -3.3630e-02,  ...,  2.7541e-02,
+          7.4378e-02, -6.2578e-02]], grad_fn=<SqueezeBackward0>)]
+tree word sequence:
+you 
+    __1-<start>
+   /
+0-you
+
+tree word sequence:
+you banana 
+    __1-<start>___
+   /              \
+0-you           2-banana
+
+tree word sequence:
+you a 
+    __1-<start>_______
+   /                  \
+0-you              _3-banana
+                  /
+                2-a
+
+tree word sequence:
+you 
+    __1-<start>_______________
+   /                          \
+0-you                      _4-banana
+                          /
+                     ___3-a
+                    /
+                2-<end>
+
+tree word sequence:
+Maybe 
+            __2-<start>_______________
+           /                          \
+     ___1-you                      _5-banana
+    /                             /
+0-Maybe                      ___4-a
+                            /
+                        3-<end>
+
+tree word sequence:
+
+                    __3-<start>_______________
+                   /                          \
+             ___2-you                      _6-banana
+            /                             /
+     ___1-Maybe                      ___5-a
+    /                               /
+0-<end>                         4-<end>
+
+tree word sequence:
+
+                            __4-<start>_______________
+                           /                          \
+             ___________3-you                      _7-banana
+            /                                     /
+     ___1-Maybe___                           ___6-a
+    /             \                         /
+0-<end>         2-<end>                 5-<end>
+
+tree word sequence:
+
+                            __4-<start>_______________________
+                           /                                  \
+             ___________3-you                      _________8-banana
+            /                                     /
+     ___1-Maybe___                           ___6-a___
+    /             \                         /         \
+0-<end>         2-<end>                 5-<end>     7-<end>
+
+tree word sequence:
+. 
+                            __4-<start>_______________________
+                           /                                  \
+             ___________3-you                      _________8-banana_
+            /                                     /                  \
+     ___1-Maybe___                           ___6-a___               9-.
+    /             \                         /         \
+0-<end>         2-<end>                 5-<end>     7-<end>
+
+tree word sequence:
+have . 
+                            _________5-<start>_______________________
+                           /                                         \
+             ___________3-you__                           _________9-banana_
+            /                  \                         /                  \
+     ___1-Maybe___            4-have                ___7-a___               10-.
+    /             \                                /         \
+0-<end>         2-<end>                        6-<end>     8-<end>
+
+tree word sequence:
+. 
+                            _________________6-<start>________________________
+                           /                                                  \
+             ___________3-you__________                           _________10-banana_
+            /                          \                         /                   \
+     ___1-Maybe___                 ___5-have                ___8-a___                11-.
+    /             \               /                        /         \
+0-<end>         2-<end>       4-<end>                  7-<end>     9-<end>
+
+tree word sequence:
+. 
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana_
+            /                          \                                 /                    \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                 12-.
+    /             \               /            \                   /         \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.
+    /             \               /            \                   /         \                    /
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.___
+    /             \               /            \                   /         \                    /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>      14-<end>
+
+epoch: 12, pos_loss:-2.2094290256500244, decoder_loss:-1.555555820465088, sentence/s: 0
+emb:  [tensor([[ 7.2603e-02,  4.8560e-02,  2.3800e-02,  ..., -7.1051e-02,
+          6.7546e-02, -2.0232e-03],
+        [ 2.3174e-02,  9.6429e-03, -7.4298e-02,  ..., -8.6794e-02,
+         -2.0801e-02,  9.5940e-02],
+        [ 2.6164e-02,  4.4758e-03,  4.3961e-02,  ..., -3.1586e-02,
+          5.3355e-02,  7.3915e-03],
+        ...,
+        [ 5.9060e-02,  4.5141e-03, -9.3629e-02,  ...,  8.7589e-02,
+         -8.3079e-02,  3.5222e-02],
+        [-4.1222e-02,  8.0173e-02,  2.3611e-02,  ...,  4.6145e-02,
+         -4.9725e-05, -6.7182e-02],
+        [ 2.0289e-02,  7.5191e-03, -3.3630e-02,  ...,  2.7541e-02,
+          7.4378e-02, -6.2578e-02]], grad_fn=<SqueezeBackward0>)]
+tree word sequence:
+you 
+    __1-<start>
+   /
+0-you
+
+tree word sequence:
+you banana 
+    __1-<start>___
+   /              \
+0-you           2-banana
+
+tree word sequence:
+Maybe banana 
+            __2-<start>___
+           /              \
+     ___1-you           3-banana
+    /
+0-Maybe
+
+tree word sequence:
+Maybe a 
+            __2-<start>_______
+           /                  \
+     ___1-you              _4-banana
+    /                     /
+0-Maybe                 3-a
+
+tree word sequence:
+Maybe have a 
+            _________3-<start>_______
+           /                         \
+     ___1-you__                   _5-banana
+    /          \                 /
+0-Maybe       2-have           4-a
+
+tree word sequence:
+Maybe a 
+            _________________4-<start>_______
+           /                                 \
+     ___1-you__________                   _6-banana
+    /                  \                 /
+0-Maybe            ___3-have           5-a
+                  /
+              2-<end>
+
+tree word sequence:
+Maybe a 
+            _________________________5-<start>_______
+           /                                         \
+     ___1-you__________                           _7-banana
+    /                  \                         /
+0-Maybe            ___3-have___                6-a
+                  /            \
+              2-<end>        4-<end>
+
+tree word sequence:
+Maybe a . 
+            _________________________5-<start>_______
+           /                                         \
+     ___1-you__________                           _7-banana_
+    /                  \                         /          \
+0-Maybe            ___3-have___                6-a          8-.
+                  /            \
+              2-<end>        4-<end>
+
+tree word sequence:
+a . 
+                    _________________________6-<start>_______
+                   /                                         \
+             ___2-you__________                           _8-banana_
+            /                  \                         /          \
+     ___1-Maybe            ___4-have___                7-a          9-.
+    /                     /            \
+0-<end>               3-<end>        5-<end>
+
+tree word sequence:
+. 
+                    _________________________6-<start>_______________
+                   /                                                 \
+             ___2-you__________                                   _9-banana_
+            /                  \                                 /          \
+     ___1-Maybe            ___4-have___                     ___8-a          10-.
+    /                     /            \                   /
+0-<end>               3-<end>        5-<end>           7-<end>
+
+tree word sequence:
+. 
+                            _________________________7-<start>________________
+                           /                                                  \
+             ___________3-you__________                                   _10-banana_
+            /                          \                                 /           \
+     ___1-Maybe___                 ___5-have___                     ___9-a           11-.
+    /             \               /            \                   /
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>
+
+tree word sequence:
+. 
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana_
+            /                          \                                 /                    \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                 12-.
+    /             \               /            \                   /         \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.
+    /             \               /            \                   /         \                    /
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.___
+    /             \               /            \                   /         \                    /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>      14-<end>
+
+epoch: 13, pos_loss:-1.921196699142456, decoder_loss:-1.555555820465088, sentence/s: 0
+emb:  [tensor([[ 7.2603e-02,  4.8560e-02,  2.3800e-02,  ..., -7.1051e-02,
+          6.7546e-02, -2.0232e-03],
+        [ 2.3174e-02,  9.6429e-03, -7.4298e-02,  ..., -8.6794e-02,
+         -2.0801e-02,  9.5940e-02],
+        [ 2.6164e-02,  4.4758e-03,  4.3961e-02,  ..., -3.1586e-02,
+          5.3355e-02,  7.3915e-03],
+        ...,
+        [ 5.9060e-02,  4.5141e-03, -9.3629e-02,  ...,  8.7589e-02,
+         -8.3079e-02,  3.5222e-02],
+        [-4.1222e-02,  8.0173e-02,  2.3611e-02,  ...,  4.6145e-02,
+         -4.9725e-05, -6.7182e-02],
+        [ 2.0289e-02,  7.5191e-03, -3.3630e-02,  ...,  2.7541e-02,
+          7.4378e-02, -6.2578e-02]], grad_fn=<SqueezeBackward0>)]
+tree word sequence:
+you 
+    __1-<start>
+   /
+0-you
+
+tree word sequence:
+Maybe 
+            __2-<start>
+           /
+     ___1-you
+    /
+0-Maybe
+
+tree word sequence:
+Maybe have 
+            _________3-<start>
+           /
+     ___1-you__
+    /          \
+0-Maybe       2-have
+
+tree word sequence:
+Maybe have banana 
+            _________3-<start>___
+           /                     \
+     ___1-you__                4-banana
+    /          \
+0-Maybe       2-have
+
+tree word sequence:
+Maybe banana 
+            _________________4-<start>___
+           /                             \
+     ___1-you__________                5-banana
+    /                  \
+0-Maybe            ___3-have
+                  /
+              2-<end>
+
+tree word sequence:
+banana 
+                    _________________5-<start>___
+                   /                             \
+             ___2-you__________                6-banana
+            /                  \
+     ___1-Maybe            ___4-have
+    /                     /
+0-<end>               3-<end>
+
+tree word sequence:
+banana 
+                            _________________6-<start>___
+                           /                             \
+             ___________3-you__________                7-banana
+            /                          \
+     ___1-Maybe___                 ___5-have
+    /             \               /
+0-<end>         2-<end>       4-<end>
+
+tree word sequence:
+banana 
+                            _________________________7-<start>___
+                           /                                     \
+             ___________3-you__________                        8-banana
+            /                          \
+     ___1-Maybe___                 ___5-have___
+    /             \               /            \
+0-<end>         2-<end>       4-<end>        6-<end>
+
+tree word sequence:
+a 
+                            _________________________7-<start>_______
+                           /                                         \
+             ___________3-you__________                           _9-banana
+            /                          \                         /
+     ___1-Maybe___                 ___5-have___                8-a
+    /             \               /            \
+0-<end>         2-<end>       4-<end>        6-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>________________
+                           /                                                  \
+             ___________3-you__________                                   _10-banana
+            /                          \                                 /
+     ___1-Maybe___                 ___5-have___                     ___9-a
+    /             \               /            \                   /
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>
+
+tree word sequence:
+. 
+                            _________________________7-<start>________________
+                           /                                                  \
+             ___________3-you__________                                   _10-banana_
+            /                          \                                 /           \
+     ___1-Maybe___                 ___5-have___                     ___9-a           11-.
+    /             \               /            \                   /
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>
+
+tree word sequence:
+. 
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana_
+            /                          \                                 /                    \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                 12-.
+    /             \               /            \                   /         \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.
+    /             \               /            \                   /         \                    /
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.___
+    /             \               /            \                   /         \                    /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>      14-<end>
+
+epoch: 14, pos_loss:-2.0409905910491943, decoder_loss:-1.555555820465088, sentence/s: 0
+emb:  [tensor([[ 7.2603e-02,  4.8560e-02,  2.3800e-02,  ..., -7.1051e-02,
+          6.7546e-02, -2.0232e-03],
+        [ 2.3174e-02,  9.6429e-03, -7.4298e-02,  ..., -8.6794e-02,
+         -2.0801e-02,  9.5940e-02],
+        [ 2.6164e-02,  4.4758e-03,  4.3961e-02,  ..., -3.1586e-02,
+          5.3355e-02,  7.3915e-03],
+        ...,
+        [ 5.9060e-02,  4.5141e-03, -9.3629e-02,  ...,  8.7589e-02,
+         -8.3079e-02,  3.5222e-02],
+        [-4.1222e-02,  8.0173e-02,  2.3611e-02,  ...,  4.6145e-02,
+         -4.9725e-05, -6.7182e-02],
+        [ 2.0289e-02,  7.5191e-03, -3.3630e-02,  ...,  2.7541e-02,
+          7.4378e-02, -6.2578e-02]], grad_fn=<SqueezeBackward0>)]
+tree word sequence:
+you 
+    __1-<start>
+   /
+0-you
+
+tree word sequence:
+Maybe 
+            __2-<start>
+           /
+     ___1-you
+    /
+0-Maybe
+
+tree word sequence:
+
+                    __3-<start>
+                   /
+             ___2-you
+            /
+     ___1-Maybe
+    /
+0-<end>
+
+tree word sequence:
+
+                            __4-<start>
+                           /
+             ___________3-you
+            /
+     ___1-Maybe___
+    /             \
+0-<end>         2-<end>
+
+tree word sequence:
+have 
+                            _________5-<start>
+                           /
+             ___________3-you__
+            /                  \
+     ___1-Maybe___            4-have
+    /             \
+0-<end>         2-<end>
+
+tree word sequence:
+have banana 
+                            _________5-<start>___
+                           /                     \
+             ___________3-you__                6-banana
+            /                  \
+     ___1-Maybe___            4-have
+    /             \
+0-<end>         2-<end>
+
+tree word sequence:
+banana 
+                            _________________6-<start>___
+                           /                             \
+             ___________3-you__________                7-banana
+            /                          \
+     ___1-Maybe___                 ___5-have
+    /             \               /
+0-<end>         2-<end>       4-<end>
+
+tree word sequence:
+a 
+                            _________________6-<start>_______
+                           /                                 \
+             ___________3-you__________                   _8-banana
+            /                          \                 /
+     ___1-Maybe___                 ___5-have           7-a
+    /             \               /
+0-<end>         2-<end>       4-<end>
+
+tree word sequence:
+
+                            _________________6-<start>_______________
+                           /                                         \
+             ___________3-you__________                           _9-banana
+            /                          \                         /
+     ___1-Maybe___                 ___5-have                ___8-a
+    /             \               /                        /
+0-<end>         2-<end>       4-<end>                  7-<end>
+
+tree word sequence:
+
+                            _________________6-<start>________________________
+                           /                                                  \
+             ___________3-you__________                           _________10-banana
+            /                          \                         /
+     ___1-Maybe___                 ___5-have                ___8-a___
+    /             \               /                        /         \
+0-<end>         2-<end>       4-<end>                  7-<end>     9-<end>
+
+tree word sequence:
+. 
+                            _________________6-<start>________________________
+                           /                                                  \
+             ___________3-you__________                           _________10-banana_
+            /                          \                         /                   \
+     ___1-Maybe___                 ___5-have                ___8-a___                11-.
+    /             \               /                        /         \
+0-<end>         2-<end>       4-<end>                  7-<end>     9-<end>
+
+tree word sequence:
+. 
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana_
+            /                          \                                 /                    \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                 12-.
+    /             \               /            \                   /         \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.
+    /             \               /            \                   /         \                    /
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.___
+    /             \               /            \                   /         \                    /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>      14-<end>
+
+epoch: 15, pos_loss:-1.56041419506073, decoder_loss:-1.555555820465088, sentence/s: 0
+emb:  [tensor([[ 7.2603e-02,  4.8560e-02,  2.3800e-02,  ..., -7.1051e-02,
+          6.7546e-02, -2.0232e-03],
+        [ 2.3174e-02,  9.6429e-03, -7.4298e-02,  ..., -8.6794e-02,
+         -2.0801e-02,  9.5940e-02],
+        [ 2.6164e-02,  4.4758e-03,  4.3961e-02,  ..., -3.1586e-02,
+          5.3355e-02,  7.3915e-03],
+        ...,
+        [ 5.9060e-02,  4.5141e-03, -9.3629e-02,  ...,  8.7589e-02,
+         -8.3079e-02,  3.5222e-02],
+        [-4.1222e-02,  8.0173e-02,  2.3611e-02,  ...,  4.6145e-02,
+         -4.9725e-05, -6.7182e-02],
+        [ 2.0289e-02,  7.5191e-03, -3.3630e-02,  ...,  2.7541e-02,
+          7.4378e-02, -6.2578e-02]], grad_fn=<SqueezeBackward0>)]
+tree word sequence:
+you 
+    __1-<start>
+   /
+0-you
+
+tree word sequence:
+Maybe 
+            __2-<start>
+           /
+     ___1-you
+    /
+0-Maybe
+
+tree word sequence:
+
+                    __3-<start>
+                   /
+             ___2-you
+            /
+     ___1-Maybe
+    /
+0-<end>
+
+tree word sequence:
+banana 
+                    __3-<start>___
+                   /              \
+             ___2-you           4-banana
+            /
+     ___1-Maybe
+    /
+0-<end>
+
+tree word sequence:
+a 
+                    __3-<start>_______
+                   /                  \
+             ___2-you              _5-banana
+            /                     /
+     ___1-Maybe                 4-a
+    /
+0-<end>
+
+tree word sequence:
+
+                    __3-<start>_______________
+                   /                          \
+             ___2-you                      _6-banana
+            /                             /
+     ___1-Maybe                      ___5-a
+    /                               /
+0-<end>                         4-<end>
+
+tree word sequence:
+
+                    __3-<start>_______________________
+                   /                                  \
+             ___2-you                      _________7-banana
+            /                             /
+     ___1-Maybe                      ___5-a___
+    /                               /         \
+0-<end>                         4-<end>     6-<end>
+
+tree word sequence:
+have 
+                    _________4-<start>_______________________
+                   /                                         \
+             ___2-you__                           _________8-banana
+            /          \                         /
+     ___1-Maybe       3-have                ___6-a___
+    /                                      /         \
+0-<end>                                5-<end>     7-<end>
+
+tree word sequence:
+have . 
+                    _________4-<start>_______________________
+                   /                                         \
+             ___2-you__                           _________8-banana_
+            /          \                         /                  \
+     ___1-Maybe       3-have                ___6-a___               9-.
+    /                                      /         \
+0-<end>                                5-<end>     7-<end>
+
+tree word sequence:
+have . 
+                            _________5-<start>_______________________
+                           /                                         \
+             ___________3-you__                           _________9-banana_
+            /                  \                         /                  \
+     ___1-Maybe___            4-have                ___7-a___               10-.
+    /             \                                /         \
+0-<end>         2-<end>                        6-<end>     8-<end>
+
+tree word sequence:
+have 
+                            _________5-<start>_______________________
+                           /                                         \
+             ___________3-you__                           _________9-banana__________
+            /                  \                         /                           \
+     ___1-Maybe___            4-have                ___7-a___                    ____11-.
+    /             \                                /         \                  /
+0-<end>         2-<end>                        6-<end>     8-<end>          10-<end>
+
+tree word sequence:
+have 
+                            _________5-<start>_______________________
+                           /                                         \
+             ___________3-you__                           _________9-banana__________
+            /                  \                         /                           \
+     ___1-Maybe___            4-have                ___7-a___                    ____11-.___
+    /             \                                /         \                  /           \
+0-<end>         2-<end>                        6-<end>     8-<end>          10-<end>      12-<end>
+
+tree word sequence:
+
+                            _________________6-<start>________________________
+                           /                                                  \
+             ___________3-you__________                           _________10-banana__________
+            /                          \                         /                            \
+     ___1-Maybe___                 ___5-have                ___8-a___                     ____12-.___
+    /             \               /                        /         \                   /           \
+0-<end>         2-<end>       4-<end>                  7-<end>     9-<end>           11-<end>      13-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.___
+    /             \               /            \                   /         \                    /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>      14-<end>
+
+epoch: 16, pos_loss:-1.8595482110977173, decoder_loss:-1.555555820465088, sentence/s: 0
+emb:  [tensor([[ 7.2603e-02,  4.8560e-02,  2.3800e-02,  ..., -7.1051e-02,
+          6.7546e-02, -2.0232e-03],
+        [ 2.3174e-02,  9.6429e-03, -7.4298e-02,  ..., -8.6794e-02,
+         -2.0801e-02,  9.5940e-02],
+        [ 2.6164e-02,  4.4758e-03,  4.3961e-02,  ..., -3.1586e-02,
+          5.3355e-02,  7.3915e-03],
+        ...,
+        [ 5.9060e-02,  4.5141e-03, -9.3629e-02,  ...,  8.7589e-02,
+         -8.3079e-02,  3.5222e-02],
+        [-4.1222e-02,  8.0173e-02,  2.3611e-02,  ...,  4.6145e-02,
+         -4.9725e-05, -6.7182e-02],
+        [ 2.0289e-02,  7.5191e-03, -3.3630e-02,  ...,  2.7541e-02,
+          7.4378e-02, -6.2578e-02]], grad_fn=<SqueezeBackward0>)]
+tree word sequence:
+you 
+    __1-<start>
+   /
+0-you
+
+tree word sequence:
+you banana 
+    __1-<start>___
+   /              \
+0-you           2-banana
+
+tree word sequence:
+you a 
+    __1-<start>_______
+   /                  \
+0-you              _3-banana
+                  /
+                2-a
+
+tree word sequence:
+you 
+    __1-<start>_______________
+   /                          \
+0-you                      _4-banana
+                          /
+                     ___3-a
+                    /
+                2-<end>
+
+tree word sequence:
+you 
+    __1-<start>_______________________
+   /                                  \
+0-you                      _________5-banana
+                          /
+                     ___3-a___
+                    /         \
+                2-<end>     4-<end>
+
+tree word sequence:
+Maybe 
+            __2-<start>_______________________
+           /                                  \
+     ___1-you                      _________6-banana
+    /                             /
+0-Maybe                      ___4-a___
+                            /         \
+                        3-<end>     5-<end>
+
+tree word sequence:
+Maybe . 
+            __2-<start>_______________________
+           /                                  \
+     ___1-you                      _________6-banana_
+    /                             /                  \
+0-Maybe                      ___4-a___               7-.
+                            /         \
+                        3-<end>     5-<end>
+
+tree word sequence:
+Maybe 
+            __2-<start>_______________________
+           /                                  \
+     ___1-you                      _________6-banana_________
+    /                             /                          \
+0-Maybe                      ___4-a___                    ___8-.
+                            /         \                  /
+                        3-<end>     5-<end>          7-<end>
+
+tree word sequence:
+Maybe 
+            __2-<start>_______________________
+           /                                  \
+     ___1-you                      _________6-banana_________
+    /                             /                          \
+0-Maybe                      ___4-a___                    ___8-.___
+                            /         \                  /         \
+                        3-<end>     5-<end>          7-<end>     9-<end>
+
+tree word sequence:
+Maybe have 
+            _________3-<start>_______________________
+           /                                         \
+     ___1-you__                           _________7-banana_________
+    /          \                         /                          \
+0-Maybe       2-have                ___5-a___                    ___9-.___
+                                   /         \                  /         \
+                               4-<end>     6-<end>          8-<end>     10-<end>
+
+tree word sequence:
+Maybe 
+            _________________4-<start>_______________________
+           /                                                 \
+     ___1-you__________                           _________8-banana_________
+    /                  \                         /                          \
+0-Maybe            ___3-have                ___6-a___                    ___10-.___
+                  /                        /         \                  /          \
+              2-<end>                  5-<end>     7-<end>          9-<end>      11-<end>
+
+tree word sequence:
+
+                    _________________5-<start>_______________________
+                   /                                                 \
+             ___2-you__________                           _________9-banana__________
+            /                  \                         /                           \
+     ___1-Maybe            ___4-have                ___7-a___                    ____11-.___
+    /                     /                        /         \                  /           \
+0-<end>               3-<end>                  6-<end>     8-<end>          10-<end>      12-<end>
+
+tree word sequence:
+
+                            _________________6-<start>________________________
+                           /                                                  \
+             ___________3-you__________                           _________10-banana__________
+            /                          \                         /                            \
+     ___1-Maybe___                 ___5-have                ___8-a___                     ____12-.___
+    /             \               /                        /         \                   /           \
+0-<end>         2-<end>       4-<end>                  7-<end>     9-<end>           11-<end>      13-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.___
+    /             \               /            \                   /         \                    /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>      14-<end>
+
+epoch: 17, pos_loss:-1.8294895887374878, decoder_loss:-1.555555820465088, sentence/s: 0
+emb:  [tensor([[ 7.2603e-02,  4.8560e-02,  2.3800e-02,  ..., -7.1051e-02,
+          6.7546e-02, -2.0232e-03],
+        [ 2.3174e-02,  9.6429e-03, -7.4298e-02,  ..., -8.6794e-02,
+         -2.0801e-02,  9.5940e-02],
+        [ 2.6164e-02,  4.4758e-03,  4.3961e-02,  ..., -3.1586e-02,
+          5.3355e-02,  7.3915e-03],
+        ...,
+        [ 5.9060e-02,  4.5141e-03, -9.3629e-02,  ...,  8.7589e-02,
+         -8.3079e-02,  3.5222e-02],
+        [-4.1222e-02,  8.0173e-02,  2.3611e-02,  ...,  4.6145e-02,
+         -4.9725e-05, -6.7182e-02],
+        [ 2.0289e-02,  7.5191e-03, -3.3630e-02,  ...,  2.7541e-02,
+          7.4378e-02, -6.2578e-02]], grad_fn=<SqueezeBackward0>)]
+tree word sequence:
+you 
+    __1-<start>
+   /
+0-you
+
+tree word sequence:
+you banana 
+    __1-<start>___
+   /              \
+0-you           2-banana
+
+tree word sequence:
+Maybe banana 
+            __2-<start>___
+           /              \
+     ___1-you           3-banana
+    /
+0-Maybe
+
+tree word sequence:
+banana 
+                    __3-<start>___
+                   /              \
+             ___2-you           4-banana
+            /
+     ___1-Maybe
+    /
+0-<end>
+
+tree word sequence:
+banana 
+                            __4-<start>___
+                           /              \
+             ___________3-you           5-banana
+            /
+     ___1-Maybe___
+    /             \
+0-<end>         2-<end>
+
+tree word sequence:
+have banana 
+                            _________5-<start>___
+                           /                     \
+             ___________3-you__                6-banana
+            /                  \
+     ___1-Maybe___            4-have
+    /             \
+0-<end>         2-<end>
+
+tree word sequence:
+have a 
+                            _________5-<start>_______
+                           /                         \
+             ___________3-you__                   _7-banana
+            /                  \                 /
+     ___1-Maybe___            4-have           6-a
+    /             \
+0-<end>         2-<end>
+
+tree word sequence:
+have a . 
+                            _________5-<start>_______
+                           /                         \
+             ___________3-you__                   _7-banana_
+            /                  \                 /          \
+     ___1-Maybe___            4-have           6-a          8-.
+    /             \
+0-<end>         2-<end>
+
+tree word sequence:
+have . 
+                            _________5-<start>_______________
+                           /                                 \
+             ___________3-you__                           _8-banana_
+            /                  \                         /          \
+     ___1-Maybe___            4-have                ___7-a          9-.
+    /             \                                /
+0-<end>         2-<end>                        6-<end>
+
+tree word sequence:
+. 
+                            _________________6-<start>_______________
+                           /                                         \
+             ___________3-you__________                           _9-banana_
+            /                          \                         /          \
+     ___1-Maybe___                 ___5-have                ___8-a          10-.
+    /             \               /                        /
+0-<end>         2-<end>       4-<end>                  7-<end>
+
+tree word sequence:
+. 
+                            _________________________7-<start>________________
+                           /                                                  \
+             ___________3-you__________                                   _10-banana_
+            /                          \                                 /           \
+     ___1-Maybe___                 ___5-have___                     ___9-a           11-.
+    /             \               /            \                   /
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>________________
+                           /                                                  \
+             ___________3-you__________                                   _10-banana__________
+            /                          \                                 /                    \
+     ___1-Maybe___                 ___5-have___                     ___9-a                ____12-.
+    /             \               /            \                   /                     /
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>               11-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>________________
+                           /                                                  \
+             ___________3-you__________                                   _10-banana__________
+            /                          \                                 /                    \
+     ___1-Maybe___                 ___5-have___                     ___9-a                ____12-.___
+    /             \               /            \                   /                     /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>               11-<end>      13-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.___
+    /             \               /            \                   /         \                    /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>      14-<end>
+
+epoch: 18, pos_loss:-1.9408035278320312, decoder_loss:-1.555555820465088, sentence/s: 0
+emb:  [tensor([[ 7.2603e-02,  4.8560e-02,  2.3800e-02,  ..., -7.1051e-02,
+          6.7546e-02, -2.0232e-03],
+        [ 2.3174e-02,  9.6429e-03, -7.4298e-02,  ..., -8.6794e-02,
+         -2.0801e-02,  9.5940e-02],
+        [ 2.6164e-02,  4.4758e-03,  4.3961e-02,  ..., -3.1586e-02,
+          5.3355e-02,  7.3915e-03],
+        ...,
+        [ 5.9060e-02,  4.5141e-03, -9.3629e-02,  ...,  8.7589e-02,
+         -8.3079e-02,  3.5222e-02],
+        [-4.1222e-02,  8.0173e-02,  2.3611e-02,  ...,  4.6145e-02,
+         -4.9725e-05, -6.7182e-02],
+        [ 2.0289e-02,  7.5191e-03, -3.3630e-02,  ...,  2.7541e-02,
+          7.4378e-02, -6.2578e-02]], grad_fn=<SqueezeBackward0>)]
+tree word sequence:
+you 
+    __1-<start>
+   /
+0-you
+
+tree word sequence:
+Maybe 
+            __2-<start>
+           /
+     ___1-you
+    /
+0-Maybe
+
+tree word sequence:
+
+                    __3-<start>
+                   /
+             ___2-you
+            /
+     ___1-Maybe
+    /
+0-<end>
+
+tree word sequence:
+have 
+                    _________4-<start>
+                   /
+             ___2-you__
+            /          \
+     ___1-Maybe       3-have
+    /
+0-<end>
+
+tree word sequence:
+have 
+                            _________5-<start>
+                           /
+             ___________3-you__
+            /                  \
+     ___1-Maybe___            4-have
+    /             \
+0-<end>         2-<end>
+
+tree word sequence:
+have banana 
+                            _________5-<start>___
+                           /                     \
+             ___________3-you__                6-banana
+            /                  \
+     ___1-Maybe___            4-have
+    /             \
+0-<end>         2-<end>
+
+tree word sequence:
+have a 
+                            _________5-<start>_______
+                           /                         \
+             ___________3-you__                   _7-banana
+            /                  \                 /
+     ___1-Maybe___            4-have           6-a
+    /             \
+0-<end>         2-<end>
+
+tree word sequence:
+have a . 
+                            _________5-<start>_______
+                           /                         \
+             ___________3-you__                   _7-banana_
+            /                  \                 /          \
+     ___1-Maybe___            4-have           6-a          8-.
+    /             \
+0-<end>         2-<end>
+
+tree word sequence:
+a . 
+                            _________________6-<start>_______
+                           /                                 \
+             ___________3-you__________                   _8-banana_
+            /                          \                 /          \
+     ___1-Maybe___                 ___5-have           7-a          9-.
+    /             \               /
+0-<end>         2-<end>       4-<end>
+
+tree word sequence:
+a 
+                            _________________6-<start>_______
+                           /                                 \
+             ___________3-you__________                   _8-banana_________
+            /                          \                 /                  \
+     ___1-Maybe___                 ___5-have           7-a               ___10-.
+    /             \               /                                     /
+0-<end>         2-<end>       4-<end>                               9-<end>
+
+tree word sequence:
+
+                            _________________6-<start>_______________
+                           /                                         \
+             ___________3-you__________                           _9-banana__________
+            /                          \                         /                   \
+     ___1-Maybe___                 ___5-have                ___8-a               ____11-.
+    /             \               /                        /                    /
+0-<end>         2-<end>       4-<end>                  7-<end>              10-<end>
+
+tree word sequence:
+
+                            _________________6-<start>_______________
+                           /                                         \
+             ___________3-you__________                           _9-banana__________
+            /                          \                         /                   \
+     ___1-Maybe___                 ___5-have                ___8-a               ____11-.___
+    /             \               /                        /                    /           \
+0-<end>         2-<end>       4-<end>                  7-<end>              10-<end>      12-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>________________
+                           /                                                  \
+             ___________3-you__________                                   _10-banana__________
+            /                          \                                 /                    \
+     ___1-Maybe___                 ___5-have___                     ___9-a                ____12-.___
+    /             \               /            \                   /                     /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>               11-<end>      13-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.___
+    /             \               /            \                   /         \                    /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>      14-<end>
+
+epoch: 19, pos_loss:-1.5359959602355957, decoder_loss:-1.555555820465088, sentence/s: 0
+emb:  [tensor([[ 7.2603e-02,  4.8560e-02,  2.3800e-02,  ..., -7.1051e-02,
+          6.7546e-02, -2.0232e-03],
+        [ 2.3174e-02,  9.6429e-03, -7.4298e-02,  ..., -8.6794e-02,
+         -2.0801e-02,  9.5940e-02],
+        [ 2.6164e-02,  4.4758e-03,  4.3961e-02,  ..., -3.1586e-02,
+          5.3355e-02,  7.3915e-03],
+        ...,
+        [ 5.9060e-02,  4.5141e-03, -9.3629e-02,  ...,  8.7589e-02,
+         -8.3079e-02,  3.5222e-02],
+        [-4.1222e-02,  8.0173e-02,  2.3611e-02,  ...,  4.6145e-02,
+         -4.9725e-05, -6.7182e-02],
+        [ 2.0289e-02,  7.5191e-03, -3.3630e-02,  ...,  2.7541e-02,
+          7.4378e-02, -6.2578e-02]], grad_fn=<SqueezeBackward0>)]
+tree word sequence:
+you 
+    __1-<start>
+   /
+0-you
+
+tree word sequence:
+Maybe 
+            __2-<start>
+           /
+     ___1-you
+    /
+0-Maybe
+
+tree word sequence:
+
+                    __3-<start>
+                   /
+             ___2-you
+            /
+     ___1-Maybe
+    /
+0-<end>
+
+tree word sequence:
+
+                            __4-<start>
+                           /
+             ___________3-you
+            /
+     ___1-Maybe___
+    /             \
+0-<end>         2-<end>
+
+tree word sequence:
+banana 
+                            __4-<start>___
+                           /              \
+             ___________3-you           5-banana
+            /
+     ___1-Maybe___
+    /             \
+0-<end>         2-<end>
+
+tree word sequence:
+have banana 
+                            _________5-<start>___
+                           /                     \
+             ___________3-you__                6-banana
+            /                  \
+     ___1-Maybe___            4-have
+    /             \
+0-<end>         2-<end>
+
+tree word sequence:
+banana 
+                            _________________6-<start>___
+                           /                             \
+             ___________3-you__________                7-banana
+            /                          \
+     ___1-Maybe___                 ___5-have
+    /             \               /
+0-<end>         2-<end>       4-<end>
+
+tree word sequence:
+banana 
+                            _________________________7-<start>___
+                           /                                     \
+             ___________3-you__________                        8-banana
+            /                          \
+     ___1-Maybe___                 ___5-have___
+    /             \               /            \
+0-<end>         2-<end>       4-<end>        6-<end>
+
+tree word sequence:
+a 
+                            _________________________7-<start>_______
+                           /                                         \
+             ___________3-you__________                           _9-banana
+            /                          \                         /
+     ___1-Maybe___                 ___5-have___                8-a
+    /             \               /            \
+0-<end>         2-<end>       4-<end>        6-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>________________
+                           /                                                  \
+             ___________3-you__________                                   _10-banana
+            /                          \                                 /
+     ___1-Maybe___                 ___5-have___                     ___9-a
+    /             \               /            \                   /
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana
+            /                          \                                 /
+     ___1-Maybe___                 ___5-have___                     ___9-a___
+    /             \               /            \                   /         \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>
+
+tree word sequence:
+. 
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana_
+            /                          \                                 /                    \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                 12-.
+    /             \               /            \                   /         \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.
+    /             \               /            \                   /         \                    /
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>
+
+tree word sequence:
+
+                            _________________________7-<start>_________________________
+                           /                                                           \
+             ___________3-you__________                                   __________11-banana__________
+            /                          \                                 /                             \
+     ___1-Maybe___                 ___5-have___                     ___9-a___                      ____13-.___
+    /             \               /            \                   /         \                    /           \
+0-<end>         2-<end>       4-<end>        6-<end>           8-<end>     10-<end>           12-<end>      14-<end>
+
+-----------------------------------------------------------------------------------------
+Exiting from training early

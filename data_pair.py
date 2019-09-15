@@ -46,8 +46,8 @@ class Corpus(object):
 
 	def pairtoken(self, the_tuple, the_tree):
 		x, y = the_tuple
-		xwords = x.split() + ['<eos>']
-		ywords = y.split() + ['<eos>']
+		xwords = x.split() + ['<eos>'] + ['<start>'] + ['<end>']
+		ywords = y.split() + ['<eos>'] + ['<start>'] + ['<end>']
 		return {'X': list(map(self.dictionary.word2idx.__getitem__, xwords)), 'Y': list(map(self.dictionary_out.word2idx.__getitem__, ywords)), 'Y_tree': the_tree}
 
 		### Tokenizes two text files and add to the dictionary
@@ -60,20 +60,20 @@ class Corpus(object):
 		with open(path, 'r') as f:
 			tokens = 0
 			for line in f:
-				words = line.split() + ['<eos>']
+				words = line.split() + ['<eos>'] + ['<start>'] + ['<end>']
 				tokens += len(words)
 				for word in words:
 					self.dictionary.add_word(word)
 		with open(target_path, 'r') as f:
 			tar_tokens = 0
 			for line in f:
-				words = line.split() + ['<eos>']
+				words = line.split() + ['<eos>'] + ['<start>'] + ['<end>']
 				tar_tokens += len(words)
 				for word in words:
 					self.dictionary_out.add_word(word)
 
 		### Tokenize file content
 		zipped = list(zip(open(path, 'r'), open(target_path, 'r')))
-		print(zipped)
+		#print(zipped)
 
 		return np.asarray(list(map(self.pairtoken, zipped, torch.load(tree_path))), dtype = tuple)

@@ -29,7 +29,7 @@ class Pos_choser(nn.Module):
 			nn.Linear(self.node_dim, 1))
 
 	def forward(self, cur_tree, sentence_encoder, dictionary):
-		num_samples = cur_tree.size(0)
+		num_samples = cur_tree.nodenum()
 		cur_tree.make_index(0)
 		###
 		'''
@@ -39,7 +39,7 @@ class Pos_choser(nn.Module):
 		graph_hidden = graph_hidden.repeat(num_samples)
 		node_hidden = torch.cat((node_hidden, graph_hidden), 1)
 		'''
-		the_graph = cur_tree.tree2graph(sentence_encoder, dictionary, node_dim)
+		the_graph = cur_tree.tree2graph(sentence_encoder, dictionary, self.node_dim)
 		node_hidden = the_graph.node_embs
 		graph_hidden = the_graph.the_aggr()
 		graph_hidden = graph_hidden.repeat(num_samples).view(self.node_dim, -1)
@@ -210,6 +210,7 @@ class word_choser(nn.Module):
 		the_inp = torch.cat((sen_emb, graph_emb, torch.Tensor([pos_index])))
 		_, h = self.lstm(the_inp)
 		h = h.mm(self.dim_out)
+		h = F.softmax(h)
 		return h
 
 if __name__ == "__main__":

@@ -49,12 +49,12 @@ class Tree():
 		if (not self.left) and (not self.right) and not(self.root == '<end>'):
 			return [self]
 		tmp = []
-		if contain_single and not (self.left and self.right):
+		if contain_single and (self.left == False or self.right == False):
 			tmp = [self]
 		if self.left:
-			tmp = self.left.leaves() + tmp
+			tmp = self.left.leaves(contain_single) + tmp
 		if self.right:
-			tmp = tmp + self.right.leaves()
+			tmp = tmp + self.right.leaves(contain_single)
 		return tmp
 
 	def nodenum(self):
@@ -89,12 +89,12 @@ class Tree():
 	### Find the index of specific node with given word (theroot)
 	def find_index(self, theroot):
 		a = self.left.find_index(theroot) if self.left else False
-		if a:
+		if a is not False:
 			return a
 		if self.root == theroot:
 			return self.index
 		a = self.right.find_index(theroot) if self.right else False
-		if a:
+		if a is not False:
 			return a
 		return False
 
@@ -113,6 +113,12 @@ class Tree():
 				return self.right and self.right.insert_son(father_index, son_root)
 			return True
 
+def refresh_mask(tree):
+	tree.mask = 0
+	if tree.left:
+		refresh_mask(tree.left)
+	if tree.right:
+		refresh_mask(tree.right)
 
 def random_seq(tree):
 	dest = tree.nodenum()
@@ -120,27 +126,38 @@ def random_seq(tree):
 	seq = []
 	indseq = []
 	wordseq = []
+	ansseq = []
 	treeseq = [copy.deepcopy(tree)]
+	tmp = copy.deepcopy(tree)
+	tmp.make_index()
 	while len(candidate) > 0:
 		flag = False
 		a = random.choice(candidate)
 		seq.append(a)
 		wordseq.append(a.root)
-		if a.left and not (a.left in seq):
-			candidate.append(a.left)
+		indseq.append(tmp.find_index(a.root))
+		if a.mask == 1 and a.right:
+			ansseq.append(a.right.root)
+		elif a.left:
+			ansseq.append(a.left.root)
+		if (a.left is not False) and not ((a.left in seq) or (a.left in candidate) or a.mask == 1):
+			if a.left.root != '<end>':
+				candidate.append(a.left)
 			a.mask = 1
-			if a.right:
+			if a.right is not False:
 				flag = True
-		elif a.right:
-			candidate.append(a.right)
+		elif (a.right is not False):
+			if a.right.root != '<end>':
+				candidate.append(a.right)
 			a.mask = 2
 		if flag == False:
 			candidate.remove(a)
 		tmp = copy.deepcopy(tree)
 		tmp.make_index()
 		treeseq.append(tmp)
-		indseq.append(tmp.find_index(a.root))
-	return seq, indseq, wordseq, treeseq[:-1]
+		#print_tree(tmp, True)
+		
+	return seq, indseq, wordseq, treeseq[:-1], ansseq
 
 def _build_tree_string(root, show_index=False):
 	# SOURCE: https://github.com/joowani/binarytree
