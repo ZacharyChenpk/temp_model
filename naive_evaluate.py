@@ -11,8 +11,9 @@ from nltk.translate.bleu_score import sentence_bleu
 
 import data_pair as data
 from utils import batchify, repackage_hidden
-from model import Pos_choser, sentence_encoder, word_choser
+from naive_model import Pos_choser, sentence_encoder, word_choser
 import tree
+from tree import Tree, print_tree
 
 parser = argparse.ArgumentParser(description='PyTorch PennTreeBank RNN/LSTM Language Model')
 parser.add_argument('--data', type=str, default='data/penn/',
@@ -28,9 +29,10 @@ parser.add_argument('--resume', type=str, default='',
 
 args = parser.parse_args()
 args.philly = True
+args.cuda = False
 
 fn = 'corpus_fold_path'
-if os.path.exists(fn):
+if os.path.exists(fn) and False:
 	print('Loading cached dataset...')
 	corpus = torch.load(fn)
 else:
@@ -49,17 +51,21 @@ def model_load(fn):
 ### Input a encoding of a sentence, return the decoding result and corresponding tree in timestamps
 def encode2seq(model_pos, model_word, code, hiddens, corpus, strategy='greedy'):
 	curtree = Tree('<start>')
+	model_word.lstm.init_cellandh()
 	while len(curtree.leaves(contain_single=True))>0:
-		leaves, leave_inds, scores = model_pos(curtree)
+		leaves, leave_inds, scores = model_pos(curtree, model_encoder, corpus.dictionary_out)
 		if strategy == 'greedy':
 			### Directly choose the word with highest probability
 			### p_leave is the index of chosen leave
-			p = scores.index(max(scores))
+			# p = scores.index(max(scores))
+			p = int(torch.nonzero(torch.eq(scores,max(scores)))[0][0])
 			p_leave = leave_inds[p]
 			### out_dist is the distribution of words probability
-			out_dist = model_word(encode, hiddens, p_leave)
-			curtree.insert_son(p_leave, corpus.dictionary_out.idx2word[out_dist.index(max(out_dist))])
+			out_dist = model_word(code, hiddens, p_leave)
+			out_dist[corpus.dictionary_out.word2idx['<start>']] = 0
+			curtree.insert_son(p_leave, corpus.dictionary_out.idx2word[int(torch.nonzero(torch.eq(out_dist,max(out_dist)))[0][0])])
 			curtree.make_index()
+			print_tree(curtree, True)
 	### Remove special token and generate sentence
 	words = map(lambda x:'' if x[0]=='<' else x, curtree.horizontal_scan(contain_end=False))
 	return reduce(operator.add, words), curtree
@@ -67,19 +73,23 @@ def encode2seq(model_pos, model_word, code, hiddens, corpus, strategy='greedy'):
 ### Input a batch of sentence in words, return its generated sentence and tree
 def predict_batch(model_pos, model_encoder, model_word, batch_X, corpus):
 	batch_size = len(batch_X)
+	print(batch_X)
 	hidden_encoder = model_encoder.init_hidden(batch_size)
-	hidden_outs, layer_outs = model_encoder(batch_X, hidden_encoder)
-	encodes = layer_outs[-1][1]
+	hidden_outs, encodes = model_encoder(batch_X, hidden_encoder)
+	
 
-	Ys, Ytrees = map(encode2seq, encodes)
-	return Ys, Ytrees
+	YsYtrees = [encode2seq(model_pos, model_word, encode, hid.squeeze(1), corpus) for encode, hid in zip(encodes, hidden_outs)]
+	YsYtrees = list(zip(*YsYtrees))
+	YsYtrees = list(map(list, YsYtrees))
+
+	return YsYtrees[0], YsYtrees[1]
 
 ### Calculate the total BLEU score of test data
 def eval_total_bleu(model_pos, model_encoder, model_word, test_data, corpus):
 	bleus = []
 	for i in test_data:
 		Ys, Ytrees = predict_batch(model_pos, model_encoder, model_word, [a['X'] for a in i], corpus)
-		bleus.append(map(sentence_bleu, Ys, [a['Y'] for a in i]))
+		bleus.append(list(map(sentence_bleu, Ys, [a['Y'] for a in i])))
 
 	return bleus, mean(bleus)
 

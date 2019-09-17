@@ -188,8 +188,8 @@ class word_choser(nn.Module):
 		self.lstm.init_cellandh()
 
 	def forward(self, sen_emb, hiddens, pos_index):
-		#print(hiddens.size())
-		#print(sen_emb.size())
+		print(hiddens.size())
+		print(sen_emb.size())
 		att_scores = hiddens.mm(sen_emb.view(-1,1))
 		att_scores = F.softmax(att_scores)
 		att_result = att_scores.t().mm(hiddens)

@@ -57,17 +57,21 @@ class Corpus(object):
 		assert os.path.exists(target_path)
 		assert os.path.exists(tree_path)
 		### Add words to the dictionary
+		self.dictionary.add_word('<start>')
+		self.dictionary.add_word('<end>')
+		self.dictionary_out.add_word('<start>')
+		self.dictionary_out.add_word('<end>')
 		with open(path, 'r') as f:
 			tokens = 0
 			for line in f:
-				words = line.split() + ['<eos>'] + ['<start>'] + ['<end>']
+				words = line.split() + ['<eos>']
 				tokens += len(words)
 				for word in words:
 					self.dictionary.add_word(word)
 		with open(target_path, 'r') as f:
 			tar_tokens = 0
 			for line in f:
-				words = line.split() + ['<eos>'] + ['<start>'] + ['<end>']
+				words = line.split() + ['<eos>']
 				tar_tokens += len(words)
 				for word in words:
 					self.dictionary_out.add_word(word)

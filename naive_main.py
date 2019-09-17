@@ -154,6 +154,7 @@ def batch_loss(X, Y, Y_tree):
 	ntokens = len(corpus.dictionary)
 	ntokens_out = len(corpus.dictionary_out)
 	hidden_encoder = model_encoder.init_hidden(args.batch_size)
+	print(X)
 	hidden_outs, h_n = model_encoder(X, hidden_encoder)
 	#print('A')
 
@@ -272,9 +273,10 @@ try:
 	print('-' * 89)
 	print('Exiting')
 	model_save('models')
-	print('| End of training | pos loss/epoch {:5.2f} | decoder ppl/epoch {:5.2f}'.format(np.mean(global_pos_losses), np.mean(global_decoder_losses)))
+	print('| End of training | pos loss/epoch {:5.2f} | decoder ppl/epoch {:5.2f}'.format(torch.mean(torch.Tensor(global_pos_losses)), torch.mean(torch.Tensor(global_decoder_losses))))
 except KeyboardInterrupt:
 	print('-' * 89)
 	print('Exiting from training early')
 	model_save('models')
-	print('| End of training | pos loss/epoch {:5.2f} | decoder ppl/epoch {:5.2f}'.format(np.mean(global_pos_losses), np.mean(global_decoder_losses)))
+	print(global_pos_losses)
+	print('| End of training | pos loss/epoch {:5.2f} | decoder ppl/epoch {:5.2f}'.format(torch.mean(torch.Tensor(global_pos_losses)), torch.mean(torch.Tensor(global_decoder_losses))))
