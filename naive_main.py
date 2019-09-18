@@ -14,7 +14,7 @@ from functools import reduce
 import data_pair as data
 from utils import batchify, repackage_hidden
 from naive_model import Pos_choser, sentence_encoder, word_choser
-from evaluate import predict_batch
+from naive_evaluate import predict_batch
 import tree
 from tree import random_seq, print_tree, refresh_mask
 
@@ -35,9 +35,9 @@ parser.add_argument('--chunk_size', type=int, default=16,
 					help='number of units per chunk')
 parser.add_argument('--nlayers', type=int, default=3,
 					help='number of layers')
-parser.add_argument('--poslr', type=float, default=30,
+parser.add_argument('--poslr', type=float, default=0.3,
 					help='initial pos learning rate')
-parser.add_argument('--encoderlr', type=float, default=30,
+parser.add_argument('--encoderlr', type=float, default=0.3,
 					help='initial encoder learning rate')
 parser.add_argument('--clip', type=float, default=0.25,
 					help='gradient clipping')
@@ -138,15 +138,17 @@ def single_tree_loss(tree, true_ans):
 	#print_tree(tree, True)
 	#print('ans: ', true_ans)
 	#print('leave_inds: ', leave_inds)
-	ans_dis[leave_inds.index(true_ans)] = 1
-	return F.kl_div(scores, ans_dis)
+	ans_dis[leave_inds.index(true_ans)] = 1.0
+	#print(scores, ans_dis, F.binary_cross_entropy(scores, ans_dis))
+	return F.binary_cross_entropy(scores, ans_dis)
 
 def single_sen_decode_loss(encode, hiddens, true_pos, word_ans):
 	model_word.lstm.init_cellandh()
 	out_dist = list(map(lambda x: model_word(encode, hiddens, x), true_pos))
-	kls = list(map(lambda x:F.kl_div(out_dist[x], word_ans[x]), range(len(out_dist))))
+	kls = list(map(lambda x:F.binary_cross_entropy(out_dist[x], word_ans[x]), range(len(out_dist))))
 	return sum(kls)
 
+batch_tree_ret = False
 
 def batch_loss(X, Y, Y_tree):
 	decoder_loss = 0.0
@@ -154,17 +156,20 @@ def batch_loss(X, Y, Y_tree):
 	ntokens = len(corpus.dictionary)
 	ntokens_out = len(corpus.dictionary_out)
 	hidden_encoder = model_encoder.init_hidden(args.batch_size)
-	print(X)
+	#print(X)
 	hidden_outs, h_n = model_encoder(X, hidden_encoder)
 	#print('A')
 
-	batch_tree_ret = list(map(random_seq, Y_tree))
-	batch_tree_ret = list(zip(*batch_tree_ret))
-	batch_tree_ret = list(map(list, batch_tree_ret))
-	#print('batch_tree_ret:')
-	#for aa in batch_tree_ret:
-		#print(aa)
-	#print('E')
+	global batch_tree_ret
+	if not batch_tree_ret:
+		batch_tree_ret = list(map(random_seq, Y_tree))
+		batch_tree_ret = list(zip(*batch_tree_ret))
+		batch_tree_ret = list(map(list, batch_tree_ret))
+		print('flag')
+		#print('batch_tree_ret:')
+		#for aa in batch_tree_ret:
+			#print(aa)
+		#print('E')
 	raw_lenseqs = list(map(len, batch_tree_ret[0]))
 	lenseqs = [0]*(len(raw_lenseqs)+1)
 	for i in range(len(raw_lenseqs)):
@@ -204,9 +209,12 @@ if args.optimizer == 'adam':
 def train_one_epoch(epoch):
 	# We can use dropout in training?
 	total_loss = 0.
+	total_pos = 0.
+	total_dec = 0.
 	start_time = time.time()
 	ntokens = len(corpus.dictionary)
 	ntokens_out = len(corpus.dictionary_out)
+	how_much_batch = len(train_data)
 	hidden_encoder = model_encoder.init_hidden(args.batch_size)
 	hidden_pos = model_pos.init_hidden()
 
@@ -231,6 +239,8 @@ def train_one_epoch(epoch):
 		decoder_loss.requires_grad_()
 		pos_loss.backward(retain_graph=True)
 		decoder_loss.backward(retain_graph=True)
+		total_pos += pos_loss
+		total_dec += decoder_loss
 		#print('C')
 
 		if args.clip: 
@@ -251,7 +261,7 @@ def train_one_epoch(epoch):
 			print('output sentence:', Ys[0])
 			print_tree(Ytrees[0], show_index=True)
 		'''
-	print('epoch: {0}, pos_loss:{1}, decoder_loss:{2}, sentence/s: {3}'.format(epoch, pos_loss, decoder_loss, int(len(X)/(time.time()-start_time))))
+	print('epoch: {0}, pos_loss:{1}, decoder_loss:{2}, sentence/s: {3}'.format(epoch, total_pos/how_much_batch, total_dec/how_much_batch, len(X)/(time.time()-start_time)))
 	global_pos_losses.append(pos_loss)
 	global_decoder_losses.append(decoder_loss)
 
@@ -268,6 +278,7 @@ stored_loss = 100000000
 # use Ctrl+C to break out of training at any point
 try:
 	print('traindata', train_data)
+	batch_tree_ret = False
 	for epoch in range(1, args.epochs + 1):
 		train_one_epoch(epoch)
 	print('-' * 89)

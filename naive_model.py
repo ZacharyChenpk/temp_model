@@ -188,18 +188,22 @@ class word_choser(nn.Module):
 		self.lstm.init_cellandh()
 
 	def forward(self, sen_emb, hiddens, pos_index):
-		print(hiddens.size())
-		print(sen_emb.size())
+		#print(hiddens.size())
+		#print(sen_emb.size())
 		att_scores = hiddens.mm(sen_emb.view(-1,1))
+		att_scores = torch.sigmoid(att_scores)
 		att_scores = F.softmax(att_scores)
 		att_result = att_scores.t().mm(hiddens)
+		#print('att_result:',att_result)
 
 		the_inp = torch.cat((sen_emb, att_result.squeeze(0), torch.Tensor([pos_index])))
+		#print('the_inp:',the_inp)
 		_, h = self.lstm(the_inp)
 		#print(h.size())
 		#print(self.dim_out.size())
-		h = h.unsqueeze(0).mm(self.dim_out).unsqueeze(0)
+		h = h.unsqueeze(0).mm(self.dim_out).squeeze(0)
 		h = F.softmax(h)
+		#print(h.size())
 		return h
 
 if __name__ == "__main__":

@@ -46,8 +46,8 @@ class Corpus(object):
 
 	def pairtoken(self, the_tuple, the_tree):
 		x, y = the_tuple
-		xwords = x.split() + ['<eos>'] + ['<start>'] + ['<end>']
-		ywords = y.split() + ['<eos>'] + ['<start>'] + ['<end>']
+		xwords = x.split()
+		ywords = y.split()
 		return {'X': list(map(self.dictionary.word2idx.__getitem__, xwords)), 'Y': list(map(self.dictionary_out.word2idx.__getitem__, ywords)), 'Y_tree': the_tree}
 
 		### Tokenizes two text files and add to the dictionary

@@ -42,6 +42,7 @@ class Tree():
 				tmp.append(self.root)
 		if self.right:
 			tmp.extend(self.right.horizontal_scan(contain_end))
+		return tmp
 
 	### Return its leaves
 	### If contain_single, it will return the single-son node too
@@ -49,7 +50,7 @@ class Tree():
 		if (not self.left) and (not self.right) and not(self.root == '<end>'):
 			return [self]
 		tmp = []
-		if contain_single and (self.left == False or self.right == False):
+		if contain_single and (self.root != '<end>') and (self.left == False or self.right == False):
 			tmp = [self]
 		if self.left:
 			tmp = self.left.leaves(contain_single) + tmp

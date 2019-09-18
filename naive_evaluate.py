@@ -7,7 +7,9 @@ import torch.nn as nn
 import torch.optim.lr_scheduler as lr_scheduler
 import torch.nn.functional as F
 import os
+import operator
 from nltk.translate.bleu_score import sentence_bleu
+from functools import reduce
 
 import data_pair as data
 from utils import batchify, repackage_hidden
@@ -58,12 +60,14 @@ def encode2seq(model_pos, model_word, code, hiddens, corpus, strategy='greedy'):
 			### Directly choose the word with highest probability
 			### p_leave is the index of chosen leave
 			# p = scores.index(max(scores))
-			p = int(torch.nonzero(torch.eq(scores,max(scores)))[0][0])
+			p = int(torch.argmax(scores))
 			p_leave = leave_inds[p]
 			### out_dist is the distribution of words probability
 			out_dist = model_word(code, hiddens, p_leave)
-			out_dist[corpus.dictionary_out.word2idx['<start>']] = 0
-			curtree.insert_son(p_leave, corpus.dictionary_out.idx2word[int(torch.nonzero(torch.eq(out_dist,max(out_dist)))[0][0])])
+			out_dist[corpus.dictionary_out.word2idx['<start>']] = -1
+			print(out_dist)
+			#print(corpus.dictionary_out)
+			curtree.insert_son(p_leave, corpus.dictionary_out.idx2word[torch.argmax(out_dist)])
 			curtree.make_index()
 			print_tree(curtree, True)
 	### Remove special token and generate sentence
@@ -89,6 +93,7 @@ def eval_total_bleu(model_pos, model_encoder, model_word, test_data, corpus):
 	bleus = []
 	for i in test_data:
 		Ys, Ytrees = predict_batch(model_pos, model_encoder, model_word, [a['X'] for a in i], corpus)
+		print(Ys, [a['Y'] for a in i])
 		bleus.append(list(map(sentence_bleu, Ys, [a['Y'] for a in i])))
 
 	return bleus, mean(bleus)
@@ -98,6 +103,7 @@ if __name__ == "__main__":
 	train_data = batchify(corpus.train, args.batch_size, args)
 	val_data = batchify(corpus.valid, args.batch_size, args)
 	test_data = batchify(corpus.test, args.batch_size, args)
+	print(corpus.dictionary_out.idx2word)
 
 	if args.resume:
 		print('Resuming models ...')

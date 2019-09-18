@@ -133,12 +133,12 @@ def single_tree_loss(tree, true_ans):
 	leaves, leave_inds, scores = model_pos(tree, model_encoder, corpus.dictionary_out)
 	ans_dis = torch.zeros(len(leaves))
 	ans_dis[leave_inds.find(true_ans)] = 1
-	return F.kl_div(scores, ans_dis)
+	return F.binary_cross_entropy(scores, ans_dis)
 
 def single_sen_decode_loss(encode, hiddens, true_pos, word_ans):
 	model_word.lstm.init_cellandh()
 	out_dist = model_word(encode, hiddens, true_pos)
-	return F.kl_div(out_dist, word_ans)
+	return F.binary_cross_entropy(out_dist, word_ans)
 
 
 def batch_loss(X, Y, Y_tree):
