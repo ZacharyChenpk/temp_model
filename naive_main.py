@@ -14,7 +14,7 @@ from functools import reduce
 import data_pair as data
 from utils import batchify, repackage_hidden
 from naive_model import Pos_choser, sentence_encoder, word_choser
-from naive_evaluate import predict_batch
+#from naive_evaluate import predict_batch
 import tree
 from tree import random_seq, print_tree, refresh_mask
 
@@ -23,21 +23,21 @@ parser.add_argument('--data', type=str, default='data/penn/',
 					help='location of the data corpus')
 parser.add_argument('--model', type=str, default='LSTM',
 					help='type of recurrent net (LSTM, QRNN, GRU)')
-parser.add_argument('--emsize', type=int, default=512,
+parser.add_argument('--emsize', type=int, default=256,
 					help='size of word embeddings')
-parser.add_argument('--hidsize', type=int, default=512,
+parser.add_argument('--hidsize', type=int, default=256,
 					help='size of hidden states in lstm')
-parser.add_argument('--nodesize', type=int, default=512,
+parser.add_argument('--nodesize', type=int, default=256,
 					help='size of nodes presentation in tree/graph')
-parser.add_argument('--nhid', type=int, default=1150,
+parser.add_argument('--nhid', type=int, default=300,
 					help='number of hidden units per layer')
 parser.add_argument('--chunk_size', type=int, default=16,
 					help='number of units per chunk')
 parser.add_argument('--nlayers', type=int, default=3,
 					help='number of layers')
-parser.add_argument('--poslr', type=float, default=0.3,
+parser.add_argument('--poslr', type=float, default=3,
 					help='initial pos learning rate')
-parser.add_argument('--encoderlr', type=float, default=0.3,
+parser.add_argument('--encoderlr', type=float, default=3,
 					help='initial encoder learning rate')
 parser.add_argument('--clip', type=float, default=0.25,
 					help='gradient clipping')
@@ -47,7 +47,7 @@ parser.add_argument('--batch_size', type=int, default=80, metavar='N',
 					help='batch size')
 parser.add_argument('--bptt', type=int, default=70,
 					help='sequence length')
-parser.add_argument('--dropout', type=float, default=0.4,
+parser.add_argument('--dropout', type=float, default=0,
 					help='dropout applied to layers (0 = no dropout)')
 parser.add_argument('--seed', type=int, default=1111,
 					help='random seed')
@@ -248,8 +248,8 @@ def train_one_epoch(epoch):
 
 		optimizer_pos.step()
 		optimizer_encoder.step()
-		'''
-		if random()>0.7:
+		
+		if random()>0.9:
 			model_pos.eval()
 			model_encoder.eval()
 			model_word.eval()
@@ -260,7 +260,7 @@ def train_one_epoch(epoch):
 			print('true answer:', Y[the_sample])
 			print('output sentence:', Ys[0])
 			print_tree(Ytrees[0], show_index=True)
-		'''
+		
 	print('epoch: {0}, pos_loss:{1}, decoder_loss:{2}, sentence/s: {3}'.format(epoch, total_pos/how_much_batch, total_dec/how_much_batch, len(X)/(time.time()-start_time)))
 	global_pos_losses.append(pos_loss)
 	global_decoder_losses.append(decoder_loss)
