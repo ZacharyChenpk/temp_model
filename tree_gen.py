@@ -1,3 +1,4 @@
+import argparse
 import tree
 import os
 import torch
@@ -33,11 +34,11 @@ def sen2tree(sen, strategy, flag=False):
 			print_tree(thetree)
 			return thetree
 		else:
-			thetree = Tree('<start>')
+			thetree = Tree(sen[0])
 			thetree.left = Tree('<end>')
 			thetree.right = sen2tree(sen[1:], strategy, True)
 			return thetree
-	elif args.strategy == 'R2L'
+	elif args.strategy == 'R2L':
 		if not flag:
 			thetree = Tree('<start>')
 			thetree.right = Tree('<end>')
@@ -46,19 +47,28 @@ def sen2tree(sen, strategy, flag=False):
 			print_tree(thetree)
 			return thetree
 		else:
-			thetree = Tree('<start>')
+			thetree = Tree(sen[-1])
 			thetree.right = Tree('<end>')
 			thetree.left = sen2tree(sen[0:len(sen)-1], strategy, True)
 			return thetree
-	elif args.strategy == 'MID'
+	elif args.strategy == 'MID':
 		mid = (len(sen)+1)//2
 		if flag:
 			mid = len(sen)//2
-		thetree = Tree('<start>')
+		root = '<start>'
+		if flag:
+			root = sen[mid]
+		thetree = Tree(root)
+		if flag:
+			thetree.right = sen2tree(sen[mid+1:], strategy, True)
+		else:
+			thetree.right = sen2tree(sen[mid:], strategy, True)	
 		thetree.left = sen2tree(sen[0:mid], strategy, True)
-		thetree.right = sen2tree(sen[mid:], strategy, True)
+		#thetree.right = sen2tree(sen[mid:], strategy, True)
+		if not flag:
+			thetree.make_index()
 		return thetree
 
 with open(args.data) as f:
-	outputs = [sen2tree(line, strategy) for line in f.readlines()]
+	outputs = [sen2tree(line.split(), args.strategy) for line in f.readlines()]
 	torch.save(outputs, args.save)
