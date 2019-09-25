@@ -34,11 +34,11 @@ class GraphConvolution(Module):
             return output
 
 class GCN(Module):
-    def __init__(self, nfeat, nhid, nclass, dropout):
+    def __init__(self, nfeature, nhidden, noutput, dropout):
         super(GCN, self).__init__()
 
-        self.gc1 = GraphConvolution(nfeat, nhid)
-        self.gc2 = GraphConvolution(nhid, nclass)
+        self.gc1 = GraphConvolution(nfeature, nhidden)
+        self.gc2 = GraphConvolution(nhidden, noutput)
         self.dropout = dropout
 
     def forward(self, x, adj):
@@ -48,7 +48,7 @@ class GCN(Module):
         return F.log_softmax(x, dim=1)
 
 class Graph(nn.Module):
-    def __init__(self, g, nfeat, nhid, nclass, dropout):
+    def __init__(self, g, nfeature, nhidden, noutput, dropout):
         super(Graph, self).__init__()
         
         n = g.shape[0]
@@ -63,12 +63,8 @@ class Graph(nn.Module):
         c = (adjt > adj).float()
         adj = adj + adjt.mul(c) - adj.mul(c)
         adj = adj + torch.eye(adj.shape[0])
-        self.gcn = GCN(nfeat, nhid, nclass, dropout)
+        self.gcn = GCN(nfeature, nhidden, noutput, dropout)
         self.adj = adj
     
     def forward(self, x):
         return self.gcn(x, self.adj)
-
-if __name__ == "__main__":
-    g = torch.Tensor([1, 1, 1, 2, 3, 4])
-    model = Graph(g, 10, 3, 2, 0.5)
