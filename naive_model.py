@@ -6,7 +6,8 @@ import numpy as np
 
 from locked_dropout import LockedDropout
 from ON_LSTM import ONLSTMStack
-from fakegcn import Graph
+#from fakegcn import Graph
+from GCN import GCN, Graph
 
 class Pos_choser(nn.Module):
 	### Take in the tree currently generated, and return the distribution of positions to insert the next node
@@ -28,6 +29,7 @@ class Pos_choser(nn.Module):
 			nn.ReLU(),
 			self.drop,
 			nn.Linear(self.node_dim, 1))
+		self.gcn = GCN(node_dim, node_dim, node_dim, dropout)
 
 	def forward(self, cur_tree, sentence_encoder, dictionary):
 		num_samples = cur_tree.nodenum()
@@ -41,6 +43,7 @@ class Pos_choser(nn.Module):
 		node_hidden = torch.cat((node_hidden, graph_hidden), 1)
 		'''
 		the_graph = cur_tree.tree2graph(self, dictionary, self.node_dim)
+		the_graph.the_gcn(self.gcn)
 		node_hidden = the_graph.node_embs
 		graph_hidden = the_graph.the_aggr()
 		#print('graph_hidden size:', graph_hidden.size())

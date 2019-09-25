@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import random
 import copy
-from fakegcn import Graph
+from GCN import Graph
 
 ### structure
 

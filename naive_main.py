@@ -35,9 +35,9 @@ parser.add_argument('--chunk_size', type=int, default=16,
 					help='number of units per chunk')
 parser.add_argument('--nlayers', type=int, default=3,
 					help='number of layers')
-parser.add_argument('--poslr', type=float, default=3,
+parser.add_argument('--poslr', type=float, default=0.3,
 					help='initial pos learning rate')
-parser.add_argument('--encoderlr', type=float, default=3,
+parser.add_argument('--encoderlr', type=float, default=0.3,
 					help='initial encoder learning rate')
 parser.add_argument('--clip', type=float, default=0.25,
 					help='gradient clipping')
