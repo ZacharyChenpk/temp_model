@@ -18,7 +18,7 @@ from evaluate import predict_batch
 import tree
 from tree import random_seq, print_tree
 
-parser = argparse.ArgumentParser(description='PyTorch PennTreeBank RNN/LSTM Language Model')
+parser = argparse.ArgumentParser(description='PyTorch RNN/LSTM Language Model')
 parser.add_argument('--data', type=str, default='data/penn/',
                     help='location of the data corpus')
 parser.add_argument('--model', type=str, default='LSTM',
@@ -134,51 +134,6 @@ print('Model total parameters:', total_params)
 def batch_loss(X, Y):
 	pass
 
-'''
-def single_tree_loss(tree, true_ans):
-	leaves, leave_inds, scores = model_pos(tree, model_encoder, corpus.dictionary_out)
-	ans_dis = torch.zeros(len(leaves))
-	ans_dis[leave_inds.find(true_ans)] = 1
-	return F.binary_cross_entropy(scores, ans_dis)
-
-def single_sen_decode_loss(encode, hiddens, true_pos, word_ans):
-	model_word.lstm.init_cellandh()
-	out_dist = model_word(encode, hiddens, true_pos)
-	return F.binary_cross_entropy(out_dist, word_ans)
-
-
-def batch_loss(X, Y, Y_tree):
-	decoder_loss = 0.0
-	pos_loss = 0.0
-	ntokens = len(corpus.dictionary)
-	ntokens_out = len(corpus.dictionary_out)
-	hidden_encoder = model_encoder.init_hidden(args.batch_size)
-	hidden_outs, layer_outs, _, opts = model_encoder(X, hidden_encoder)
-	encodes = layer_outs[-1][1]
-
-	batch_tree_ret = list(map(random_seq, Y_tree))
-	batch_tree_ret = list(zip(*batch_tree_ret))
-	batch_tree_ret = list(map(list, batch_tree_ret))
-	print('batch_tree_ret:')
-	for aa in batch_tree_ret:
-		print(aa)
-	raw_lenseqs = list(map(len, batch_tree_ret[0]))
-	lenseqs = [0]*(len(raw_lenseqs)-1)
-	for i in range(len(raw_lenseqs)-1):
-		lenseqs[i+1]=lenseqs[i]+raw_lenseqs[i]
-	seqs = reduce(operator.add, batch_tree_ret[0])
-	indseqs = list(reduce(operator.add, batch_tree_ret[1]))
-	wordseqs = reduce(operator.add, batch_tree_ret[2])
-	treeseqs = reduce(operator.add, batch_tree_ret[3])
-	pos_loss = sum(map(single_tree_loss, treeseqs, indseqs))
-
-	wordseqs = map(corpus.dictionary_out.word2idx.__getitem__, wordseqs)
-	word_onehot = torch.zeros(args.batch_size, ntokens_out).scatter_(1, wordseqs, 1)
-	for i in range(len(lenseqs)-1):
-		decoder_loss += single_sen_decode_loss(encodes[i], hidden_outs[lenseqs[i]:lenseqs[i+1]], indseqs[i], word_onehot[i])
-
-	return pos_loss, decoder_loss
-'''
 optimizer = None
 args.wdecay = 0
 # Ensure the optimizer is optimizing params, which includes both the model's weights as well as the criterion's weight (i.e. Adaptive Softmax)

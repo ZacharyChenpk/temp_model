@@ -7,17 +7,19 @@ import numpy as np
 from locked_dropout import LockedDropout
 from ON_LSTM import ONLSTMStack
 from fakegcn import Graph
+from tree import Tree
 
 class Pos_choser(nn.Module):
 	### Take in the tree currently generated, and return the distribution of positions to insert the next node
-	def __init__(self, ntoken, node_dim, dropout=0.1):
+	def __init__(self, ntoken, node_dim, emb_dim, dropout=0.1):
 		super(Pos_choser,self).__init__()
 		self.drop = nn.Dropout(dropout)
 	###
 	#	self.gcn = GCN()
 	#	self.aggregation = pool()
 	###
-		self.inp_dim = node_dim * 2
+		self.inp_dim = node_dim * 2 + emb_dim
+		self.emb_dim = emb_dim
 		self.node_dim = node_dim
 		'''
 			The score_cal network will take in the GCN result of a position and the aggregation result of the whole graph,
@@ -28,7 +30,7 @@ class Pos_choser(nn.Module):
 			self.drop,
 			nn.Linear(self.node_dim, 1))
 
-	def forward(self, cur_tree, sentence_encoder, dictionary):
+	def forward(self, cur_tree, chosen_wordemb, sentence_encoder, dictionary):
 		num_samples = cur_tree.nodenum()
 		cur_tree.make_index(0)
 		###
@@ -40,15 +42,18 @@ class Pos_choser(nn.Module):
 		node_hidden = torch.cat((node_hidden, graph_hidden), 1)
 		'''
 		the_graph = cur_tree.tree2graph(sentence_encoder, dictionary, self.node_dim)
+		the_graph.the_gcn(self.gcn)
 		node_hidden = the_graph.node_embs
 		graph_hidden = the_graph.the_aggr()
-		graph_hidden = graph_hidden.repeat(num_samples).view(self.node_dim, -1)
+		graph_hidden = graph_hidden.repeat(num_samples).view(-1, self.node_dim)
+		word_embs = chosen_wordemb.repeat(num_samples).view(-1, self.self.emb_dim)
 		node_hidden = torch.cat((node_hidden, graph_hidden), 1)
+		node_hidden = torch.cat((word_embs, node_hidden), 1)
 		###
 		leaves = cur_tree.leaves(True)
 		leave_inds = [x.index for x in leaves]
 		leave_states = node_hidden[leave_inds]
-		scores = map(self.score_cal, leave_states)
+		scores = self.score_cal(leave_states)
 		scores = F.softmax(scores)
 		### Return available positions, their indexes, and their distribution of probability
 		return leaves, leave_inds, scores
@@ -158,14 +163,12 @@ class naiveLSTMCell(nn.Module):
 		return cur_cell, cur_h
 
 class word_choser(nn.Module):
-	def __init__(self, ntoken, ntoken_out, hidden_dim, emb_dim, chunk_size, nlayers):
+	def __init__(self, ntoken, ntoken_out, hidden_dim, emb_dim, node_dim, chunk_size, nlayers):
 		super(word_choser, self).__init__()
 		self.lockdrop = LockedDropout()
-		self.dim_up = torch.nn.Parameter(torch.FloatTensor(np.zeros((hidden_dim, ntoken))))
-		self.dim_down = torch.nn.Parameter(torch.FloatTensor(np.zeros((ntoken, hidden_dim))))
-		self.dim_out = torch.nn.Parameter(torch.FloatTensor(np.zeros((hidden_dim, ntoken_out))))
-		self.inpdim = emb_dim + hidden_dim + 1
-		self.outdim = hidden_dim
+		self.inpdim = emb_dim + node_dim * 2
+		self.outdim = hidden_dim * 2
+		self.dim_out = torch.nn.Parameter(torch.FloatTensor(np.zeros((self.outdim, ntoken_out))))
 		###
 		#	self.attention_gcn = GCN()
 		#	self.attention_pool = pool()
@@ -176,18 +179,19 @@ class word_choser(nn.Module):
 		self.emb_dim = emb_dim
 		self.chunk_size = chunk_size
 		self.nlayers = nlayers
-		self.lstm = naiveLSTMCell(self.inpdim, hidden_dim)
+		self.lstm = nn.LSTM(self.inpdim, hidden_dim, nlayers)
 		self.init_weights()
 
 	def init_weights(self):
 		initrange = 0.1
-		self.dim_up.data.uniform_(-initrange, initrange)
-		self.dim_down.data.uniform_(-initrange, initrange)
 		self.dim_out.data.uniform_(-initrange, initrange)
 		self.lstm.init_weights()
-		self.lstm.init_cellandh()
 
-	def forward(self, sen_emb, hiddens, pos_index):
+		#Training:
+		#	sen_emb: emb_dim
+		#	hiddens: len * hid_dim
+		#	tree_embs: len * (node_dim*2)
+	def forward(self, sen_emb, hiddens, tree_embs, Eval_pos_choser):
 		hiddens_up = hiddens.mm(self.dim_up)
 		sen_len = hiddens.size(0)
 		###
@@ -198,7 +202,7 @@ class word_choser(nn.Module):
 		self.attention_gcn(or_graph)
 		att_result = self.attention_pool(or_graph)
 		graph_emb = att_result.mm(self.dim_down)
-		'''
+		
 		or_graph = Graph(sen_len+1, self.emb_dim, self.emb_dim)
 		or_graph.ram_full_init()
 		or_graph.node_embs[0:sen_len] = hiddens_up
@@ -206,12 +210,28 @@ class word_choser(nn.Module):
 		or_graph.the_gcn()
 		att_result = or_graph.the_aggr()
 		graph_emb = att_result.mm(self.dim_down)
+		'''
 		###
-		the_inp = torch.cat((sen_emb, graph_emb, torch.Tensor([pos_index])))
-		_, h = self.lstm(the_inp)
-		h = h.mm(self.dim_out)
-		h = F.softmax(h)
-		return h
+		if not Eval_pos_choser:
+			sen_emb = sen_emb.repeat(num_samples).view(-1, self.emb_dim)
+			the_inp = torch.cat((sen_emb, tree_embs)).unsqueeze(1)
+			h0 = torch.zeros(self.nlayers, 1, self.hidden_dim)
+			c0 = torch.zeros(self.nlayers, 1, self.hidden_dim)
+			output, (hn, cn) = self.lstm(the_inp, (h0, c0))
+			output = output.squeeze(1)
+			# output: len * hid_dim
+			# hiddens: nwords * hid_dim
+			attention = torch.mm(output, torch.t(hiddens))
+			attention = F.softmax(attention, 1)
+			# attention: len * nwords
+			# hiddens: nwords * hid_dim
+			attention = torch.mm(attention, hiddens)
+			output = torch.cat((output, attention))
+			output = output.mm(self.dim_out)
+			h = F.softmax(h, 1)
+			return h
+		else:
+			
 
 if __name__ == "__main__":
 	pc = Pos_choser(1, 1)

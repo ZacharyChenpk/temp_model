@@ -149,7 +149,9 @@ class naiveLSTMCell(nn.Module):
 		self.cur_h.data.uniform_(-stdv, stdv)
 		'''
 		self.cur_cell.data.fill_(0)
+		self.cur_cell.data = repackage_hidden(self.cur_cell.data)
 		self.cur_h.data.fill_(0)
+		self.cur_h.data = repackage_hidden(self.cur_h.data)
 
 	def forward(self, inp):
 		i = torch.sigmoid(self.inp_i(inp) + self.inp_h(self.cur_h))
