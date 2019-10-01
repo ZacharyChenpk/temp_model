@@ -134,10 +134,10 @@ class Tree():
 			tmp = self.left.able_words() + tmp
 		if self.right:
 			tmp = tmp + self.right.able_words()
-		return tmp
+		return list(set(tmp))
 
 
-def behave_seq_gen(sen, flag = False):
+def behave_seq_gen(sen):
 	cur_tree = Tree('<start>')
 	l = len(sen)
 	ran_split = random.randint(1,l)

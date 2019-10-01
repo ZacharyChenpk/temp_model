@@ -114,6 +114,7 @@ class Graph(object):
 
     def the_gcn(self, gcn):
         self.node_embs = gcn(self.node_embs, self.adj)
+        return self.node_embs
 
     def the_aggr(self):
         return torch.squeeze(torch.mean(self.node_embs, dim=0),0)

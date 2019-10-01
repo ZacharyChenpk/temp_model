@@ -11,12 +11,12 @@ import operator
 from random import sample, random, randint
 from functools import reduce
 
-import data_pair as data
+import notree_data as data
 from utils import batchify, repackage_hidden
-from model import Pos_choser, sentence_encoder, word_choser
-from evaluate import predict_batch
-import tree
-from tree import random_seq, print_tree
+from notree_model import Pos_choser, sentence_encoder, word_choser
+from notree_evaluate import predict_batch
+import notree_tree as tree
+from notree_tree import behave_seq_gen, print_tree
 
 parser = argparse.ArgumentParser(description='PyTorch RNN/LSTM Language Model')
 parser.add_argument('--data', type=str, default='data/penn/',
@@ -64,8 +64,6 @@ parser.add_argument('--optimizer', type=str, default='sgd',
                     help='optimizer to use (sgd, adam)')
 parser.add_argument('--when', nargs="+", type=int, default=[-1],
                     help='When (which epochs) to divide the learning rate by 10 - accepts multiple')
-parser.add_argument('--strategy', type=str, default='L2R',
-					help='the strategy to choose positions(MID, L2R, R2L)')
 
 args = parser.parse_args()
 args.tied = True
@@ -101,16 +99,19 @@ eval_batch_size = 10
 test_batch_size = 1
 print(corpus.train)
 
-train_data = batchify(corpus.train, args.batch_size, args)
-val_data = batchify(corpus.valid, eval_batch_size, args)
-test_data = batchify(corpus.test, test_batch_size, args)
+train_data_X = batchify(corpus.train[0], args.batch_size, args)
+val_data_X = batchify(corpus.valid[0], eval_batch_size, args)
+test_data_X = batchify(corpus.test[0], test_batch_size, args)
+train_data_Y = batchify(corpus.train[1], args.batch_size, args)
+val_data_Y = batchify(corpus.valid[1], eval_batch_size, args)
+test_data_Y = batchify(corpus.test[1], test_batch_size, args)
 
 ntokens = len(corpus.dictionary)
 ntokens_out = len(corpus.dictionary_out)
 
-model_pos = Pos_choser(ntokens, args.nodesize, args.dropout)
+model_pos = Pos_choser(ntokens, args.nodesize, args.emsize, args.dropout)
 model_encoder = sentence_encoder(ntokens, args.hidsize, args.emsize, args.nlayers, args.chunk_size, wdrop=0, dropouth=args.dropout)
-model_word = word_choser(ntokens, ntokens_out, args.hidsize, args.emsize, args.chunk_size, args.nlayers)
+model_word = word_choser(ntokens, ntokens_out, args.hidsize, args.emsize, args.nodesize, args.chunk_size, args.nlayers)
 
 if args.resume:
 	print('Resuming models ...')
@@ -132,7 +133,48 @@ print('Model total parameters:', total_params)
 #############################################
 
 def batch_loss(X, Y):
-	pass
+	assert(len(X)==args.batch_size)
+	# waiting
+	#	sen_embs: bsz * emb_dim
+	#	hiddens: bsz * x_len * hid_dim
+	sen_embs, hiddens = model_encoder(X)
+	# waiting
+	word_loss = 0.0
+	pos_loss = 0.0
+	for i in range(len(X)):
+		sen_emb = sen_embs[i]
+		hidden = hiddens[i]
+		x_len = len(X)
+		y_len = len(Y)
+		sen = [corpus.dictionary.idx2word[a] for a in X[i]]
+		ans_ind, choose_words, trees_before_insert = behave_seq_gen(sen)
+		graphs_before_insert = [a.tree2graph(model_encoder, corpus.dictionary_out, args.nodesize)]
+		# gcns: y_len * node_num * node_dim
+		# aggrs: y_len * node_dim
+		gcns = [a.the_gcn(model_pos.gcn) for a in graphs_before_insert]
+		aggrs = [a.the_aggr() for a in graphs_before_insert]
+		output = model_word(sen_emb, hidden, aggrs)
+		able_words = [a.able_words() for a in trees_before_insert]
+		able_inds = [corpus.dictionary_out.word2idx[a] for a in able_words]
+		prob_vals = [1.0/len(a) for a in able_inds]
+		ans_dist = torch.zeros(y_len, ntokens_out, requires_grad=False)
+		for a in range(y_len):
+			ans_dist[a][able_inds[a]] = prob_vals[a]
+		word_loss = word_loss + F.binary_cross_entropy(output, ans_dist)
+
+		for a in range(y_len):
+			able_pos = list(map(lambda w: trees_before_insert[a].find_able_pos(w)), able_words[a])
+			def calculate_loss(x):
+				_, leave_inds, scores = model_pos(trees_before_insert[a], able_words[a][x], model_encoder, corpus.dictionary_out)
+				prob_vals = 1.0/len(able_pos[x][0])
+				ans_dist_pos = torch.zeros(able_pos[x][1], requires_grad=False)
+				ids = [leave_inds.index(the_id) for the_id in able_pos[x][0]]
+				ans_dist_pos[ids] = prob_vals
+				return F.binary_cross_entropy(scores, ans_dist_pos)
+
+			pos_loss = pos_loss + sum(map(calculate_loss, range(len(able_words[a])))) / len(able_words[a])
+	return word_loss, pos_loss
+
 
 optimizer = None
 args.wdecay = 0
@@ -155,10 +197,9 @@ def train_one_epoch(epoch):
 	hidden_encoder = model_encoder.init_hidden(args.batch_size)
 	hidden_pos = model_pos.init_hidden()
 
-	for i in train_data:
-		X = torch.LongTensor([x['X'] for x in i])
-		Y = torch.LongTensor([x['Y'] for x in i])
-		Y_tree = [x['Y_tree'] for x in i]
+	for i in len(train_data_X):
+		X = torch.LongTensor(train_data_X[i])
+		Y = torch.LongTensor(train_data_Y[i])
 		if args.cuda:
 			X = X.cuda()
 			Y = Y.cuda()
@@ -171,16 +212,16 @@ def train_one_epoch(epoch):
 		optimizer_pos.zero_grad()
 		optimizer_encoder.zero_grad()
 
-		pos_loss, decoder_loss = batch_loss(X, Y, Y_tree)
+		pos_loss, word_loss = batch_loss(X, Y)
 		pos_loss.backward()
-		decoder_loss.backward()
+		word_loss.backward()
 
 		if args.clip: 
 			torch.nn.utils.clip_grad_norm_(params, args.clip)
 
 		optimizer_pos.step()
 		optimizer_encoder.step()
-
+'''
 		if random()>0.7:
 			model_pos.eval()
 			model_encoder.eval()
@@ -192,10 +233,10 @@ def train_one_epoch(epoch):
 			print('true answer:', Y[the_sample])
 			print('output sentence:', Ys[0])
 			print_tree(Ytrees[0], show_index=True)
-
-	print('epoch: {0}, pos_loss:{1}, decoder_loss:{2}, sentence/s: {3}'.format(epoch, pos_loss, decoder_loss, int(len(X)/(time.time()-start_time))))
+'''
+	print('epoch: {0}, pos_loss:{1}, word_loss:{2}, sentence/s: {3}'.format(epoch, pos_loss, word_loss, int(len(X)/(time.time()-start_time))))
 	global_pos_losses.append(pos_loss)
-	global_decoder_losses.append(decoder_loss)
+	global_decoder_losses.append(word_loss)
 
 	if epoch % args.save_every == 0:
 		print('saving checkpoint at epoch {0}'.format(epoch))
@@ -209,7 +250,7 @@ stored_loss = 100000000
 
 # use Ctrl+C to break out of training at any point
 try:
-	print('traindata', train_data)
+	print('traindataX', train_data_X)
 	for epoch in range(1, args.epochs + 1):
 		train_one_epoch(epoch)
 except KeyboardInterrupt:

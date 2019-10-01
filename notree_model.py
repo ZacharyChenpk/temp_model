@@ -6,14 +6,16 @@ import numpy as np
 
 from locked_dropout import LockedDropout
 from ON_LSTM import ONLSTMStack
-from fakegcn import Graph
+from GCN import Graph, GCN
 from tree import Tree
 
 class Pos_choser(nn.Module):
 	### Take in the tree currently generated, and return the distribution of positions to insert the next node
-	def __init__(self, ntoken, node_dim, emb_dim, dropout=0.1):
+	def __init__(self, ntoken, node_dim, emb_dim, ntoken_out, dropout=0.1):
 		super(Pos_choser,self).__init__()
 		self.drop = nn.Dropout(dropout)
+		self.gcn = GCN(node_dim, node_dim, node_dim, dropout)
+		self.ntoken_out = ntoken_out
 	###
 	#	self.gcn = GCN()
 	#	self.aggregation = pool()
@@ -30,9 +32,13 @@ class Pos_choser(nn.Module):
 			self.drop,
 			nn.Linear(self.node_dim, 1))
 
-	def forward(self, cur_tree, chosen_wordemb, sentence_encoder, dictionary):
+	def forward(self, cur_tree, chosen_word, sentence_encoder, dictionary):
 		num_samples = cur_tree.nodenum()
 		cur_tree.make_index(0)
+		chosen_wordemb = torch.zeros(self.ntoken_out, requires_grad=False)
+		chosen_wordemb[dictionary.word2idx[chosen_word]] = 1
+		chosen_wordemb = sentence_encoder.encoder(chosen_wordemb)
+
 		###
 		'''
 		self.gcn(cur_tree)
@@ -104,69 +110,11 @@ class sentence_encoder(nn.Module):
 	def init_hidden(self, bsz):
 		return self.rnn.init_hidden(bsz)
 
-class naiveLSTMCell(nn.Module):
-	### In our model, we have to involve per step of LSTM with tree processing and attention, so we rewrite the single cell of LSTM to deal with it
-	### Hope for successful parallel computing!
-	def __init__(self, inp_size, hidden_size):
-		super(naiveLSTMCell, self).__init__()
-		self.inp_size = inp_size
-		self.hidden_size = hidden_size
-
-		self.inp_i = nn.Linear(hidden_size, inp_size)
-		self.inp_h = nn.Linear(hidden_size, hidden_size)
-		self.forget_i = nn.Linear(hidden_size, inp_size)
-		self.forget_h = nn.Linear(hidden_size, hidden_size)
-		self.out_i = nn.Linear(hidden_size, inp_size)
-		self.out_h = nn.Linear(hidden_size, hidden_size)
-		self.cell_i = nn.Linear(hidden_size, inp_size)
-		self.cell_h = nn.Linear(hidden_size, hidden_size)
-
-		self.init_weights()
-		self.cur_cell = torch.zeros(hidden_size)
-		self.cur_h = torch.zeros(hidden_size)
-
-	def init_weights(self):
-		stdv = 1. / math.sqrt(self.hidden_size)
-		self.inp_i.bias.data.fill_(0)
-		self.inp_i.weight.data.uniform_(-stdv, stdv)
-		self.inp_h.bias.data.fill_(0)
-		self.inp_h.weight.data.uniform_(-stdv, stdv)
-		self.forget_i.bias.data.fill_(0)
-		self.forget_i.weight.data.uniform_(-stdv, stdv)
-		self.forget_h.bias.data.fill_(0)
-		self.forget_h.weight.data.uniform_(-stdv, stdv)
-		self.out_i.bias.data.fill_(0)
-		self.out_i.weight.data.uniform_(-stdv, stdv)
-		self.out_h.bias.data.fill_(0)
-		self.out_h.weight.data.uniform_(-stdv, stdv)
-		self.cell_i.bias.data.fill_(0)
-		self.cell_i.weight.data.uniform_(-stdv, stdv)
-		self.cell_h.bias.data.fill_(0)
-		self.cell_h.weight.data.uniform_(-stdv, stdv)
-
-	def init_cellandh(self):
-		'''
-		stdv = 1. / math.sqrt(self.hidden_size)
-		self.cur_cell.data.uniform_(-stdv, stdv)
-		self.cur_h.data.uniform_(-stdv, stdv)
-		'''
-		self.cur_cell.data.fill_(0)
-		self.cur_h.data.fill_(0)
-
-	def forward(self, inp):
-		i = torch.sigmoid(self.inp_i(inp) + self.inp_h(self.cur_h))
-		f = torch.sigmoid(self.forget_i(inp) + self.forget_h(self.cur_h))
-		g = torch.tanh(self.cell_i(inp) + self.cell_h(self.cur_h))
-		o = torch.sigmoid(self.out_i(inp) + self.out_h(self.cur_h))
-		self.cur_cell = f * self.cur_cell + i * g
-		self.cur_h = o * torch.tanh(self.cur_cell)
-		return cur_cell, cur_h
-
 class word_choser(nn.Module):
 	def __init__(self, ntoken, ntoken_out, hidden_dim, emb_dim, node_dim, chunk_size, nlayers):
 		super(word_choser, self).__init__()
 		self.lockdrop = LockedDropout()
-		self.inpdim = emb_dim + node_dim * 2
+		self.inpdim = emb_dim + node_dim
 		self.outdim = hidden_dim * 2
 		self.dim_out = torch.nn.Parameter(torch.FloatTensor(np.zeros((self.outdim, ntoken_out))))
 		###
@@ -187,54 +135,53 @@ class word_choser(nn.Module):
 		self.dim_out.data.uniform_(-initrange, initrange)
 		self.lstm.init_weights()
 
-		#Training:
+		# Training:
 		#	sen_emb: emb_dim
-		#	hiddens: len * hid_dim
-		#	tree_embs: len * (node_dim*2)
-	def forward(self, sen_emb, hiddens, tree_embs, Eval_pos_choser):
-		hiddens_up = hiddens.mm(self.dim_up)
-		sen_len = hiddens.size(0)
-		###
-		'''
-		or_graph = Graph(node_num = sen_len + 1)
-		or_graph.nodes[0:sen_len] = hiddens_up
-		or_graph.nodes[sen_len] = self.lstm.cur_h
-		self.attention_gcn(or_graph)
-		att_result = self.attention_pool(or_graph)
-		graph_emb = att_result.mm(self.dim_down)
-		
-		or_graph = Graph(sen_len+1, self.emb_dim, self.emb_dim)
-		or_graph.ram_full_init()
-		or_graph.node_embs[0:sen_len] = hiddens_up
-		or_graph.node_embs[sen_len] = self.lstm.cur_h
-		or_graph.the_gcn()
-		att_result = or_graph.the_aggr()
-		graph_emb = att_result.mm(self.dim_down)
-		'''
-		###
-		if not Eval_pos_choser:
-			sen_emb = sen_emb.repeat(num_samples).view(-1, self.emb_dim)
+		#	hiddens: x_len * hid_dim
+		#	tree_embs: y_len * node_dim
+		#
+		# Evaluating:
+		#	sen_emb: emb_dim
+		#	hiddens: hid_dim
+		#	tree_embs: node_dim
+		#	ht, ct: nlayers * 1 * hid_dim
+	def forward(self, sen_emb, hiddens, tree_embs, ht = False, ct = False):
+		sen_len = tree_embs.size(0)
+
+		if not ht:
+			sen_emb = sen_emb.repeat(sen_len).view(-1, self.emb_dim)
 			the_inp = torch.cat((sen_emb, tree_embs)).unsqueeze(1)
 			h0 = torch.zeros(self.nlayers, 1, self.hidden_dim)
 			c0 = torch.zeros(self.nlayers, 1, self.hidden_dim)
 			output, (hn, cn) = self.lstm(the_inp, (h0, c0))
 			output = output.squeeze(1)
-			# output: len * hid_dim
-			# hiddens: nwords * hid_dim
+			# output: y_len * hid_dim
+			# hiddens: x_len * hid_dim
 			attention = torch.mm(output, torch.t(hiddens))
 			attention = F.softmax(attention, 1)
-			# attention: len * nwords
-			# hiddens: nwords * hid_dim
+			# attention: y_len * x_len
+			# hiddens: x_len * hid_dim
 			attention = torch.mm(attention, hiddens)
 			output = torch.cat((output, attention))
 			output = output.mm(self.dim_out)
-			h = F.softmax(h, 1)
-			return h
+			output = F.softmax(output, 1)
+			# output: y_len * ntoken_out
+			return output
 		else:
+			the_inp = torch.cat((sen_emb, tree_embs)).unsqueeze(0).unsqueeze(0)
+			output, (htt, ctt) = self.lstm(the_inp, (ht, ct))
+			output = output.squeeze(0)
+			attention = torch.mm(output, torch.t(hiddens))
+			attention = F.softmax(attention, 1)
+			attention = torch.mm(attention, hiddens)
+			output = torch.cat((output, attention))
+			output = output.mm(self.dim_out).squeeze(0)
+			output = F.softmax(output, 0)
+			return output
+			
 			
 
 if __name__ == "__main__":
 	pc = Pos_choser(1, 1)
 	se = sentence_encoder(1, 1, 1, 1, 1)
-	nlc = naiveLSTMCell(1, 1)
 	wc = word_choser(1, 1, 1, 1, 1)
