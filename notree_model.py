@@ -147,9 +147,9 @@ class word_choser(nn.Module):
 	def forward(self, sen_emb, hiddens, tree_embs, ht = False, ct = False):
 		sen_len = tree_embs.size(0)
 
-		if not ht:
+		if ht is False:
 			sen_emb = sen_emb.repeat(sen_len).view(-1, self.emb_dim)
-			the_inp = torch.cat((sen_emb, tree_embs)).unsqueeze(1)
+			the_inp = torch.cat((sen_emb, tree_embs),1).unsqueeze(1)
 			h0 = torch.zeros(self.nlayers, 1, self.hidden_dim)
 			c0 = torch.zeros(self.nlayers, 1, self.hidden_dim)
 			output, (hn, cn) = self.lstm(the_inp, (h0, c0))
@@ -161,7 +161,7 @@ class word_choser(nn.Module):
 			# attention: y_len * x_len
 			# hiddens: x_len * hid_dim
 			attention = torch.mm(attention, hiddens)
-			output = torch.cat((output, attention))
+			output = torch.cat((output, attention),1)
 			output = output.mm(self.dim_out)
 			output = F.softmax(output, 1)
 			# output: y_len * ntoken_out
@@ -173,7 +173,7 @@ class word_choser(nn.Module):
 			attention = torch.mm(output, torch.t(hiddens))
 			attention = F.softmax(attention, 1)
 			attention = torch.mm(attention, hiddens)
-			output = torch.cat((output, attention))
+			output = torch.cat((output, attention),1)
 			output = output.mm(self.dim_out).squeeze(0)
 			output = F.softmax(output, 0)
 			return output, htt, ctt
@@ -181,6 +181,18 @@ class word_choser(nn.Module):
 			
 
 if __name__ == "__main__":
-	pc = Pos_choser(1, 1)
-	se = sentence_encoder(1, 1, 1, 1, 1)
-	wc = word_choser(1, 1, 1, 1, 1)
+	# (self, ntoken, node_dim, emb_dim, ntoken_out, dropout=0.1)
+	pc = Pos_choser(128, 128, 128, 128)
+	#se = sentence_encoder(1, 1, 1, 1, 1)
+	# (self, ntoken, ntoken_out, hidden_dim, emb_dim, node_dim, chunk_size, nlayers)
+	wc = word_choser(128, 128, 128, 128, 128, 16, 3)
+	# def forward(self, sen_emb, hiddens, tree_embs, ht = False, ct = False):
+	#	sen_emb: emb_dim
+	#	hiddens: x_len * hid_dim
+	#	tree_embs: y_len * node_dim
+	opt = wc(torch.rand(128), torch.rand(50, 128), torch.rand(50,128))
+	#	sen_emb: emb_dim
+	#	hiddens: x_len * hid_dim
+	#	tree_embs: node_dim
+	#	ht, ct: nlayers * 1 * hid_dim
+	opt, ht, ct = wc(torch.rand(128), torch.rand(50,128), torch.rand(128), torch.rand(3,1,128), torch.rand(3,1,128))

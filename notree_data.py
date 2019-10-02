@@ -54,7 +54,7 @@ class Corpus(object):
 		words = sen.split()
 		if not is_out:
 			return [self.dictionary.word2idx[i] for i in words]
-		else 
+		else:
 			return [self.dictionary_out.word2idx[i] for i in words]
 
 		### Tokenizes two text files and add to the dictionary
@@ -93,4 +93,4 @@ class Corpus(object):
 		ret1, ret2 = list(map(self.sen_tokenize, open(path, 'r'))), list(map(lambda x:self.sen_tokenize(x, True), open(target_path, 'r')))
 		assert(len(ret1)==len(ret2))
 
-		return nd.asarray(ret1, dtype=list), nd.asarray(ret2, dtype=list)
+		return np.asarray(ret1), np.asarray(ret2)

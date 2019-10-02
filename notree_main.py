@@ -67,6 +67,7 @@ parser.add_argument('--when', nargs="+", type=int, default=[-1],
 
 args = parser.parse_args()
 args.tied = True
+args.cuda = False
 
 def model_save(fn):
     if args.philly:
@@ -84,7 +85,7 @@ def model_load(fn):
 
 import hashlib
 
-always_producing = True
+always_producing = False
 
 fn = 'corpus_fold_path'
 if os.path.exists(fn) and not always_producing:
@@ -197,9 +198,9 @@ def train_one_epoch(epoch):
 	hidden_encoder = model_encoder.init_hidden(args.batch_size)
 	hidden_pos = model_pos.init_hidden()
 
-	for i in len(train_data_X):
-		X = torch.LongTensor(train_data_X[i])
-		Y = torch.LongTensor(train_data_Y[i])
+	for i in range(len(train_data_X)):
+		X = train_data_X[i]
+		Y = train_data_Y[i]
 		if args.cuda:
 			X = X.cuda()
 			Y = Y.cuda()
@@ -221,7 +222,7 @@ def train_one_epoch(epoch):
 
 		optimizer_pos.step()
 		optimizer_encoder.step()
-'''
+		'''
 		if random()>0.7:
 			model_pos.eval()
 			model_encoder.eval()
@@ -233,10 +234,10 @@ def train_one_epoch(epoch):
 			print('true answer:', Y[the_sample])
 			print('output sentence:', Ys[0])
 			print_tree(Ytrees[0], show_index=True)
-'''
-	print('epoch: {0}, pos_loss:{1}, word_loss:{2}, sentence/s: {3}'.format(epoch, pos_loss, word_loss, int(len(X)/(time.time()-start_time))))
-	global_pos_losses.append(pos_loss)
-	global_decoder_losses.append(word_loss)
+		'''
+		print('epoch: {0}, pos_loss:{1}, word_loss:{2}, sentence/s: {3}'.format(epoch, pos_loss, word_loss, int(len(X)/(time.time()-start_time))))
+		global_pos_losses.append(pos_loss)
+		global_decoder_losses.append(word_loss)
 
 	if epoch % args.save_every == 0:
 		print('saving checkpoint at epoch {0}'.format(epoch))

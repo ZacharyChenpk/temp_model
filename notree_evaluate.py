@@ -84,7 +84,7 @@ def predict_batch(model_pos, model_encoder, model_word, batch_X, corpus, thresho
 	sen_embs, hiddens = model_encoder(X)
 	# waiting
 
-	YsYtrees = [encode2seq(model_pos, model_word, encode, hid.squeeze(1), corpus) for encode, hid in zip(encodes, hidden_outs), threshold]
+	YsYtrees = [encode2seq(model_pos, model_word, encode, hid.squeeze(1), corpus, threshold) for encode, hid in zip(encodes, hidden_outs)]
 	YsYtrees = list(zip(*YsYtrees))
 	YsYtrees = list(map(list, YsYtrees))
 
