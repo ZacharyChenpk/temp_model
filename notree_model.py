@@ -133,7 +133,6 @@ class word_choser(nn.Module):
 	def init_weights(self):
 		initrange = 0.1
 		self.dim_out.data.uniform_(-initrange, initrange)
-		self.lstm.init_weights()
 
 		# Training:
 		#	sen_emb: emb_dim
@@ -142,7 +141,7 @@ class word_choser(nn.Module):
 		#
 		# Evaluating:
 		#	sen_emb: emb_dim
-		#	hiddens: hid_dim
+		#	hiddens: x_len * hid_dim
 		#	tree_embs: node_dim
 		#	ht, ct: nlayers * 1 * hid_dim
 	def forward(self, sen_emb, hiddens, tree_embs, ht = False, ct = False):
@@ -177,7 +176,7 @@ class word_choser(nn.Module):
 			output = torch.cat((output, attention))
 			output = output.mm(self.dim_out).squeeze(0)
 			output = F.softmax(output, 0)
-			return output
+			return output, htt, ctt
 			
 			
 
