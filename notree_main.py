@@ -26,9 +26,9 @@ parser.add_argument('--model', type=str, default='LSTM',
 parser.add_argument('--emsize', type=int, default=512,
                     help='size of word embeddings')
 parser.add_argument('--hidsize', type=int, default=512,
-					help='size of hidden states in lstm')
+                    help='size of hidden states in lstm')
 parser.add_argument('--nodesize', type=int, default=512,
-					help='size of nodes presentation in tree/graph')
+                    help='size of nodes presentation in tree/graph')
 parser.add_argument('--nhid', type=int, default=1150,
                     help='number of hidden units per layer')
 parser.add_argument('--chunk_size', type=int, default=16,
@@ -118,13 +118,13 @@ model_word = word_choser(ntokens, ntokens_out, args.hidsize, args.emsize, args.n
 out_embedding = nn.Embedding(ntokens_out, args.emsize)
 
 if args.resume:
-	print('Resuming models ...')
-	model_load(args.resume)
+    print('Resuming models ...')
+    model_load(args.resume)
 
 if args.cuda:
-	model_pos = model_pos.cuda()
-	model_encoder = model_encoder.cuda()
-	model_word = model_word.cuda()
+    model_pos = model_pos.cuda()
+    model_encoder = model_encoder.cuda()
+    model_word = model_word.cuda()
 
 params = list(model_encoder.parameters()) + list(model_word.parameters())
 pos_params =  list(model_pos.parameters())
@@ -137,52 +137,52 @@ print('Model total parameters:', total_params)
 #############################################
 
 def batch_loss(X, Y):
-	assert(len(X)==args.batch_size)
-	# waiting
-	#	sen_embs: bsz * emb_dim
-	#	hiddens: bsz * x_len * hid_dim
-	hiddens, sen_embs = model_encoder(X)
-	# waiting
-	word_loss = 0.0
-	pos_loss = 0.0
-	for i in range(len(X)):
-		sen_emb = sen_embs[i]
-		hidden = hiddens[i]
-		x_len = len(X[i])
-		y_len = len(Y[i])
-		tar_sen = [corpus.dictionary_out.idx2word[a] for a in Y[i]]
-		ans_ind, choose_words, trees_before_insert = behave_seq_gen(tar_sen)
-		graphs_before_insert = [a.tree2graph(out_embedding, corpus.dictionary_out, args.nodesize) for a in trees_before_insert]
-		# gcns: y_len * node_num * node_dim
-		# aggrs: y_len * node_dim
-		gcns = [a.the_gcn(model_pos.gcn) for a in graphs_before_insert]
-		aggrs = torch.FloatTensor([a.the_aggr().tolist() for a in graphs_before_insert])
-		#print(sen_embs.size())
-		#print(sen_emb.size())
-		output = model_word(sen_emb, hidden, aggrs)
-		able_words = [a.able_words() for a in trees_before_insert]
-		able_inds = [[corpus.dictionary_out.word2idx[b] for b in a] for a in able_words]
-		prob_vals = [1.0/len(a) for a in able_inds]
-		ans_dist = torch.zeros(y_len, ntokens_out, requires_grad=False)
-		for a in range(y_len):
-			ans_dist[a][able_inds[a]] = prob_vals[a]
-		word_loss = word_loss + F.binary_cross_entropy(output, ans_dist)
+    assert(len(X)==args.batch_size)
+    # waiting
+    #   sen_embs: bsz * emb_dim
+    #   hiddens: bsz * x_len * hid_dim
+    hiddens, sen_embs = model_encoder(X)
+    # waiting
+    word_loss = 0.0
+    pos_loss = 0.0
+    for i in range(len(X)):
+        sen_emb = sen_embs[i]
+        hidden = hiddens[i]
+        x_len = len(X[i])
+        y_len = len(Y[i])
+        tar_sen = [corpus.dictionary_out.idx2word[a] for a in Y[i]]
+        ans_ind, choose_words, trees_before_insert = behave_seq_gen(tar_sen)
+        graphs_before_insert = [a.tree2graph(out_embedding, corpus.dictionary_out, args.nodesize) for a in trees_before_insert]
+        # gcns: y_len * node_num * node_dim
+        # aggrs: y_len * node_dim
+        gcns = [a.the_gcn(model_pos.gcn) for a in graphs_before_insert]
+        aggrs = torch.FloatTensor([a.the_aggr().tolist() for a in graphs_before_insert])
+        #print(sen_embs.size())
+        #print(sen_emb.size())
+        output = model_word(sen_emb, hidden, aggrs)
+        able_words = [a.able_words() for a in trees_before_insert]
+        able_inds = [[corpus.dictionary_out.word2idx[b] for b in a] for a in able_words]
+        prob_vals = [1.0/len(a) for a in able_inds]
+        ans_dist = torch.zeros(y_len, ntokens_out, requires_grad=False)
+        for a in range(y_len):
+            ans_dist[a][able_inds[a]] = prob_vals[a]
+        word_loss = word_loss + F.binary_cross_entropy(output, ans_dist)
 
-		for a in range(y_len):
-			able_pos = list(map(lambda w: trees_before_insert[a].find_able_pos(w), able_words[a]))
-			#print(able_pos)
-			def calculate_loss(x):
-				_, leave_inds, scores = model_pos(trees_before_insert[a], able_words[a][x], out_embedding, corpus.dictionary_out)
-				prob_vals = 1.0/len(able_pos[x])
-				ans_dist_pos = torch.zeros(scores.size(), requires_grad=False)
-				ids = [leave_inds.index(the_id) for the_id in able_pos[x]]
-				ans_dist_pos[ids] = prob_vals
-				#print(scores, "###", ans_dist_pos)
-				#print_tree(trees_before_insert[a])
-				return F.binary_cross_entropy(scores, ans_dist_pos)
+        for a in range(y_len):
+            able_pos = list(map(lambda w: trees_before_insert[a].find_able_pos(w), able_words[a]))
+            #print(able_pos)
+            def calculate_loss(x):
+                _, leave_inds, scores = model_pos(trees_before_insert[a], able_words[a][x], out_embedding, corpus.dictionary_out)
+                prob_vals = 1.0/len(able_pos[x])
+                ans_dist_pos = torch.zeros(scores.size(), requires_grad=False)
+                ids = [leave_inds.index(the_id) for the_id in able_pos[x]]
+                ans_dist_pos[ids] = prob_vals
+                #print(scores, "###", ans_dist_pos)
+                #print_tree(trees_before_insert[a])
+                return F.binary_cross_entropy(scores, ans_dist_pos)
 
-			pos_loss = pos_loss + sum(map(calculate_loss, range(len(able_words[a])))) / len(able_words[a])
-	return word_loss, pos_loss
+            pos_loss = pos_loss + sum(map(calculate_loss, range(len(able_words[a])))) / len(able_words[a])
+    return word_loss, pos_loss
 
 
 optimizer = None
@@ -198,58 +198,58 @@ if args.optimizer == 'adam':
     scheduler_encoder = lr_scheduler.ReduceLROnPlateau(optimizer_encoder, 'min', 0.5, patience=2, threshold=0)
 
 def train_one_epoch(epoch):
-	# We can use dropout in training?
-	total_loss = 0.
-	start_time = time.time()
-	ntokens = len(corpus.dictionary)
-	ntokens_out = len(corpus.dictionary_out)
-	hidden_encoder = model_encoder.init_hidden(args.batch_size)
-	hidden_pos = model_pos.init_hidden()
+    # We can use dropout in training?
+    total_loss = 0.
+    start_time = time.time()
+    ntokens = len(corpus.dictionary)
+    ntokens_out = len(corpus.dictionary_out)
+    hidden_encoder = model_encoder.init_hidden(args.batch_size)
+    hidden_pos = model_pos.init_hidden()
 
-	for i in range(len(train_data_X)):
-		X = train_data_X[i]
-		Y = train_data_Y[i]
-		if args.cuda:
-			X = X.cuda()
-			Y = Y.cuda()
+    for i in range(len(train_data_X)):
+        X = train_data_X[i]
+        Y = train_data_Y[i]
+        if args.cuda:
+            X = X.cuda()
+            Y = Y.cuda()
 
-		model_pos.train()
-		model_encoder.train()
-		model_word.train()
-		# hidden_encoder = repackage_hidden(hidden_encoder)
-		# hidden_pos = repackage_hidden(hidden_pos)
-		optimizer_pos.zero_grad()
-		optimizer_encoder.zero_grad()
+        model_pos.train()
+        model_encoder.train()
+        model_word.train()
+        # hidden_encoder = repackage_hidden(hidden_encoder)
+        # hidden_pos = repackage_hidden(hidden_pos)
+        optimizer_pos.zero_grad()
+        optimizer_encoder.zero_grad()
 
-		pos_loss, word_loss = batch_loss(X, Y)
-		pos_loss.backward()
-		word_loss.backward()
+        pos_loss, word_loss = batch_loss(X, Y)
+        pos_loss.backward()
+        word_loss.backward()
 
-		if args.clip: 
-			torch.nn.utils.clip_grad_norm_(params, args.clip)
+        if args.clip: 
+            torch.nn.utils.clip_grad_norm_(params, args.clip)
 
-		optimizer_pos.step()
-		optimizer_encoder.step()
-		'''
-		if random()>0.7:
-			model_pos.eval()
-			model_encoder.eval()
-			model_word.eval()
-			the_sample = randint(0, len(X)-1)
-			Ys, Ytrees = predict_batch(model_pos, model_encoder, model_word, X[the_sample], corpus)
-			print('Trigger a show!')
-			print('input sentence:', X[the_sample])
-			print('true answer:', Y[the_sample])
-			print('output sentence:', Ys[0])
-			print_tree(Ytrees[0], show_index=True)
-		'''
-		print('epoch: {0}, pos_loss:{1}, word_loss:{2}, sentence/s: {3}'.format(epoch, pos_loss, word_loss, int(len(X)/(time.time()-start_time))))
-		global_pos_losses.append(pos_loss)
-		global_decoder_losses.append(word_loss)
+        optimizer_pos.step()
+        optimizer_encoder.step()
+        '''
+        if random()>0.7:
+            model_pos.eval()
+            model_encoder.eval()
+            model_word.eval()
+            the_sample = randint(0, len(X)-1)
+            Ys, Ytrees = predict_batch(model_pos, model_encoder, model_word, X[the_sample], corpus)
+            print('Trigger a show!')
+            print('input sentence:', X[the_sample])
+            print('true answer:', Y[the_sample])
+            print('output sentence:', Ys[0])
+            print_tree(Ytrees[0], show_index=True)
+        '''
+        print('epoch: {0}, pos_loss:{1}, word_loss:{2}, sentence/s: {3}'.format(epoch, pos_loss, word_loss, int(len(X)/(time.time()-start_time))))
+        global_pos_losses.append(pos_loss)
+        global_decoder_losses.append(word_loss)
 
-	if epoch % args.save_every == 0:
-		print('saving checkpoint at epoch {0}'.format(epoch))
-		model_save('models.checkpoint')
+    if epoch % args.save_every == 0:
+        print('saving checkpoint at epoch {0}'.format(epoch))
+        model_save('models.checkpoint')
 
 
 #lr = args.lr
@@ -259,11 +259,11 @@ stored_loss = 100000000
 
 # use Ctrl+C to break out of training at any point
 try:
-	print('traindataX', train_data_X)
-	for epoch in range(1, args.epochs + 1):
-		train_one_epoch(epoch)
+    print('traindataX', train_data_X)
+    for epoch in range(1, args.epochs + 1):
+        train_one_epoch(epoch)
 except KeyboardInterrupt:
-	print('-' * 89)
-	print('Exiting from training early')
-	model_save('models')
-	print('| End of training | pos loss/epoch {:5.2f} | decoder ppl/epoch {:5.2f}'.format(torch.mean(torch.Tensor(global_pos_losses)), torch.mean(torch.Tensor(global_decoder_losses))))
+    print('-' * 89)
+    print('Exiting from training early')
+    model_save('models')
+    print('| End of training | pos loss/epoch {:5.2f} | decoder ppl/epoch {:5.2f}'.format(torch.mean(torch.Tensor(global_pos_losses)), torch.mean(torch.Tensor(global_decoder_losses))))
