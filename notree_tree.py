@@ -109,20 +109,21 @@ class Tree():
 				return self.right and self.right.insert_son(father_index, son_root)
 			return True
 
-	def find_able_pos(self, word):
-		length = self.make_index()+1
+	def find_able_pos(self, word, flag=False):
+		if not flag:
+			self.make_index(0)
 		if self.left and self.right:
-			return self.left.find_able_pos(word) + self.right.find_able_pos(word)
+			return self.left.find_able_pos(word,flag=True) + self.right.find_able_pos(word,flag=True)
 		tmp = []
 		if self.left == False and (word in self.L_able):
 			tmp = [self.index]
 		if self.right == False and (word in self.R_able):
 			tmp = [self.index]
 		if self.left:
-			tmp = self.left.find_able_pos(word) + tmp
+			tmp = self.left.find_able_pos(word,flag=True) + tmp
 		if self.right:
-			tmp = tmp + self.right.find_able_pos(word)
-		return tmp, length
+			tmp = tmp + self.right.find_able_pos(word,flag=True)
+		return tmp
 
 	def able_words(self):
 		tmp = []

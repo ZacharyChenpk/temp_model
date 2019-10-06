@@ -15,7 +15,7 @@ class Pos_choser(nn.Module):
 		super(Pos_choser,self).__init__()
 		self.drop = nn.Dropout(dropout)
 		self.gcn = GCN(node_dim, node_dim, node_dim, dropout)
-		self.ntoken_out = ntoken_out
+		self.ntoken_out = int(ntoken_out)
 	###
 	#	self.gcn = GCN()
 	#	self.aggregation = pool()
@@ -35,9 +35,11 @@ class Pos_choser(nn.Module):
 	def forward(self, cur_tree, chosen_word, sentence_encoder, dictionary):
 		num_samples = cur_tree.nodenum()
 		cur_tree.make_index(0)
-		chosen_wordemb = torch.zeros(self.ntoken_out, requires_grad=False)
-		chosen_wordemb[dictionary.word2idx[chosen_word]] = 1
-		chosen_wordemb = sentence_encoder.encoder(chosen_wordemb)
+		#chosen_wordemb = torch.zeros(self.ntoken_out, requires_grad=False, dtype = torch.long)
+		#chosen_wordemb[dictionary.word2idx[chosen_word]] = 1
+		#chosen_wordemb = sentence_encoder.encoder(chosen_wordemb)
+		chosen_wordemb = sentence_encoder(torch.LongTensor([dictionary.word2idx[chosen_word]])).squeeze(0)
+		chosen_wordemb.requeires_grad=False
 
 		###
 		'''
@@ -52,7 +54,7 @@ class Pos_choser(nn.Module):
 		node_hidden = the_graph.node_embs
 		graph_hidden = the_graph.the_aggr()
 		graph_hidden = graph_hidden.repeat(num_samples).view(-1, self.node_dim)
-		word_embs = chosen_wordemb.repeat(num_samples).view(-1, self.self.emb_dim)
+		word_embs = chosen_wordemb.repeat(num_samples).view(-1, self.emb_dim)
 		node_hidden = torch.cat((node_hidden, graph_hidden), 1)
 		node_hidden = torch.cat((word_embs, node_hidden), 1)
 		###
@@ -60,6 +62,7 @@ class Pos_choser(nn.Module):
 		leave_inds = [x.index for x in leaves]
 		leave_states = node_hidden[leave_inds]
 		scores = self.score_cal(leave_states)
+		scores = scores.view(-1)
 		scores = F.softmax(scores)
 		### Return available positions, their indexes, and their distribution of probability
 		return leaves, leave_inds, scores
@@ -76,12 +79,7 @@ class sentence_encoder(nn.Module):
 		self.lockdrop = LockedDropout()
 		self.hdrop = nn.Dropout(dropouth)
 		self.encoder = nn.Embedding(ntoken, emb_dim)
-		self.rnn = ONLSTMStack(
-			[emb_dim] + [h_dim]*nlayers,
-			chunk_size = chunk_size,
-			dropconnect = wdrop,
-			dropout = dropouth
-			)
+		self.rnn = nn.LSTM(emb_dim, h_dim, nlayers)
 		initrange = 0.1
 		self.encoder.weight.data.uniform_(-initrange, initrange)
 		self.h_dim = h_dim
@@ -92,23 +90,27 @@ class sentence_encoder(nn.Module):
 		self.wdrop = wdrop
 		self.dropouth = dropouth
 
-	def forward(self, inp_sentence, hidden):
-		emb = self.encoder(inp_sentence)
-		print('inp sen: ', inp_sentence)
-		print('emb: ', emb)
-		output, hidden, raw_outputs, outputs, distances = self.rnn(emb, hidden)
-		self.distance = distances
-		result = output.view(output.size(0)*output.size(1), output.size(2))
-		'''
-		 It seems that the 'hidden' is the encoding output and final cell states of layers
-		 the 'result' is (2-d) the hidden output of the last layers
-		 the 'outputs' is the stack of 'result' in layers
-		'''
+	def forward(self, inp_sentence):
+		print(inp_sentence.size)
+		emb = list(map(lambda x:self.encoder(torch.LongTensor([x])).squeeze(0), inp_sentence))
+		#print('inp sen: ', inp_sentence)
+		#print('emb: ', emb)
+		h0 = torch.randn(self.nlayers, 1, self.h_dim)
+		c0 = torch.randn(self.nlayers, 1, self.h_dim)
+		output = []
+		h_n = torch.zeros(len(inp_sentence), self.h_dim)
+		for i in range(len(emb)):
+			opt,(h,c)=self.rnn(torch.Tensor(emb[i]).unsqueeze(1), (h0,c0))
+			output.append(opt.squeeze(1))
+			h_n[i]=h.squeeze(1)[self.nlayers-1]
 
-		return result.permute(0,1), hidden, raw_outputs, outputs
+		#print('hn:', h_n.size())
+
+		# output is the hidden states, and h_n is the encoding result
+		return output, h_n
 
 	def init_hidden(self, bsz):
-		return self.rnn.init_hidden(bsz)
+		return 0
 
 class word_choser(nn.Module):
 	def __init__(self, ntoken, ntoken_out, hidden_dim, emb_dim, node_dim, chunk_size, nlayers):

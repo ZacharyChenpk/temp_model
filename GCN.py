@@ -89,12 +89,12 @@ class Graph(object):
                 self.adj[j][i] = dis
 
     def match_tree(self, tree, sen_encoder, dictionary):
-        embeder = sen_encoder.encoder
+        #embeder = sen_encoder.encoder
         word_id = dictionary.word2idx[tree.root]
         #word_dis = torch.zeros(len(dictionary.idx2word), dtype = torch.long)
         #print(len(dictionary.idx2word))
         #word_dis[word_id] = 1
-        the_emb = embeder(torch.LongTensor([word_id]))
+        the_emb = sen_encoder(torch.LongTensor([word_id]))
         #print('node_embs size:', self.node_embs.size())
         #print('the_emb size:', the_emb.size())
         self.node_embs[tree.index] = the_emb
