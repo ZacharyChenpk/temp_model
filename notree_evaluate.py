@@ -28,6 +28,8 @@ parser.add_argument('--cuda', action='store_false',
 					help='use CUDA')
 parser.add_argument('--resume', type=str, default='',
 					help='path of model to resume')
+parser.add_argument('--threshold', type=float, default=0.3,
+					help='the threshold of p to shut down the decoding and finish an output')
 
 args = parser.parse_args()
 args.philly = True
@@ -45,26 +47,27 @@ if __name__ == "__main__":
 
 ### Load trained model from files
 def model_load(fn):
-    global model_pos, model_encoder, model_word, optimizer
+    global model_pos, model_encoder, model_word, optimizer, out_embedding
     if args.philly:
         fn = os.path.join(os.getcwd(), fn)
     with open(fn, 'rb') as f:
-        model_pos, model_encoder, model_word, optimizer = torch.load(f)
+        model_pos, model_encoder, model_word, optimizer, out_embedding = torch.load(f)
 
 ### Input a encoding of a sentence, return the decoding result and corresponding tree in timestamps
-def encode2seq(model_pos, model_word, code, hiddens, corpus, threshold, strategy='greedy'):
+def encode2seq(model_pos, model_encoder, model_word, code, hiddens, corpus, threshold, strategy='greedy'):
 	curtree = Tree('<start>')
 	ht = torch.zeros(model_word.nlayers, 1, model_word.hidden_dim)
 	ct = torch.zeros(model_word.nlayers, 1, model_word.hidden_dim)
 	while True:
 		if strategy == 'greedy':
-			curtree.the_gcn()
-			tree_emb = curtree.the_aggr()
+			cur_graph = curtree.tree2graph(model_encoder.encoder, corpus.dictionary_out, model_pos.node_dim)
+			cur_graph.the_gcn(model_pos.gcn)
+			tree_emb = cur_graph.the_aggr()
 			word_dist, ht, ct = model_word(code, hiddens, tree_emb, ht, ct)
 			if max(word_dist) < threshold:
 				break
 			chosen_word = corpus.dictionary_out.idx2word[int(torch.argmax(word_dist))]
-			leaves, leave_inds, pos_dist = model_pos(curtree, chosen_word, model_encoder, dictionary_out)
+			leaves, leave_inds, pos_dist = model_pos(curtree, chosen_word, out_embedding, dictionary_out)
 			tar_pos = leave_inds[int(torch.argmax(pos_dist))]
 			curtree.insert_son(tar_pos, chosen_word, Training=False)
 			curtree.make_index()
@@ -81,10 +84,10 @@ def predict_batch(model_pos, model_encoder, model_word, batch_X, corpus, thresho
 	# waiting
 	#	sen_embs: bsz * emb_dim
 	#	hiddens: bsz * x_len * hid_dim
-	sen_embs, hiddens = model_encoder(X)
+	hiddens, sen_embs = model_encoder(batch_X)
 	# waiting
 
-	YsYtrees = [encode2seq(model_pos, model_word, encode, hid.squeeze(1), corpus, threshold) for encode, hid in zip(encodes, hidden_outs)]
+	YsYtrees = [encode2seq(model_pos, model_encoder, model_word, encode, hid.squeeze(1), corpus, threshold) for encode, hid in zip(sen_embs, hiddens)]
 	YsYtrees = list(zip(*YsYtrees))
 	YsYtrees = list(map(list, YsYtrees))
 
@@ -105,10 +108,10 @@ if __name__ == "__main__":
 	### Split the data into little batches
 	#train_data_X = batchify(corpus.train[0], args.batch_size, args)
 	#val_data_X = batchify(corpus.valid[0], eval_batch_size, args)
-	test_data_X = batchify(corpus.test[0], test_batch_size, args)
+	test_data_X = batchify(corpus.test[0], args.batch_size, args)
 	#train_data_Y = batchify(corpus.train[1], args.batch_size, args)
 	#val_data_Y = batchify(corpus.valid[1], eval_batch_size, args)
-	test_data_Y = batchify(corpus.test[1], test_batch_size, args)
+	test_data_Y = batchify(corpus.test[1], args.batch_size, args)
 	print(corpus.dictionary_out.idx2word)
 
 	if args.resume:

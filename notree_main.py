@@ -35,9 +35,9 @@ parser.add_argument('--chunk_size', type=int, default=16,
                     help='number of units per chunk')
 parser.add_argument('--nlayers', type=int, default=3,
                     help='number of layers')
-parser.add_argument('--poslr', type=float, default=0.3,
+parser.add_argument('--poslr', type=float, default=0.003,
                     help='initial pos learning rate')
-parser.add_argument('--encoderlr', type=float, default=0.3,
+parser.add_argument('--encoderlr', type=float, default=0.003,
                     help='initial encoder learning rate')
 parser.add_argument('--clip', type=float, default=0.25,
                     help='gradient clipping')
@@ -75,15 +75,15 @@ def model_save(fn):
     if args.philly:
         fn = os.path.join(os.getcwd(), fn)
     with open(fn, 'wb') as f:
-        torch.save([model_pos, model_encoder, model_word, optimizer], f)
+        torch.save([model_pos, model_encoder, model_word, optimizer, out_embedding], f)
 
 
 def model_load(fn):
-    global model_pos, model_encoder, model_word, optimizer
+    global model_pos, model_encoder, model_word, optimizer, out_embedding
     if args.philly:
         fn = os.path.join(os.getcwd(), fn)
     with open(fn, 'rb') as f:
-        model_pos, model_encoder, model_word, optimizer = torch.load(f)
+        model_pos, model_encoder, model_word, optimizer, out_embedding = torch.load(f)
 
 import hashlib
 
@@ -263,7 +263,7 @@ try:
 	for epoch in range(1, args.epochs + 1):
 		train_one_epoch(epoch)
 except KeyboardInterrupt:
-    print('-' * 89)
-    print('Exiting from training early')
-    model_save('models')
-    print('| End of training | pos loss/epoch {:5.2f} | decoder ppl/epoch {:5.2f}'.format(np.mean(global_pos_losses), np.mean(global_decoder_losses)))
+	print('-' * 89)
+	print('Exiting from training early')
+	model_save('models')
+	print('| End of training | pos loss/epoch {:5.2f} | decoder ppl/epoch {:5.2f}'.format(torch.mean(torch.Tensor(global_pos_losses)), torch.mean(torch.Tensor(global_decoder_losses))))
