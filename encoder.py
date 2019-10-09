@@ -27,14 +27,15 @@ class ModelEncoder(nn.Module):
         
         distances = distance[0]
         layer_size, length, batch_size = distances.size()
-        # layer_size * length * batch_size
+        distances = distances[-1] # we use the gates of the last layer as the weights of the tree.
+        distances = distances.transpose(1, 0)
         
         word_hidden_state = []
-        gcn = ONSLTMGraph(distances[-1], self.gcn_input_size, self.gcn_hidden_size,
-                          self.gcn_output_size)
-        word_hidden_state(gcn(torch.zeros([length, batch_size])))
-        
+        for i in range(len(batch_size)):
+            gcn = ONSLTMGraph(distances[i], self.gcn_input_size, self.gcn_hidden_size,
+                              self.gcn_output_size)
+            word_hidden_state.append(gcn(torch.zeros([length, self.gcn_input_size])))
+            # word_hidden_state.append(gcn(words_embedding))
         return raw_output[-1], word_hidden_state
-    
     def init_hidden(self, bsz):
         return self.encoder.init_hidden(bsz)
