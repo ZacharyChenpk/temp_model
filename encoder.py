@@ -31,8 +31,8 @@ class ModelEncoder(nn.Module):
         distances = distances.transpose(1, 0)
         
         word_hidden_state = []
-        for i in range(len(batch_size)):
-            gcn = ONSLTMGraph(distances[i], self.gcn_input_size, self.gcn_hidden_size,
+        for i in range(batch_size):
+            gcn = ONLSTMGraph(distances[i], self.gcn_input_size, self.gcn_hidden_size,
                               self.gcn_output_size)
             word_hidden_state.append(gcn(torch.zeros([length, self.gcn_input_size])))
             # word_hidden_state.append(gcn(words_embedding))

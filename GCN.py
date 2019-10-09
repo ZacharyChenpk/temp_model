@@ -52,7 +52,7 @@ class GCN(Module):
         return F.log_softmax(x, dim=1)
 # without test
 class ONLSTMGraph(nn.Module):
-    def __init__(self, distence, input_size, hidden_size, output_size, batch_size, dropout = 0.5):
+    def __init__(self, distence, input_size, hidden_size, output_size, dropout = 0.5):
         super(ONLSTMGraph, self).__init__()
         self.gcn = GCN(input_size, hidden_size, output_size, dropout)
         n = len(distence)
@@ -65,7 +65,7 @@ class ONLSTMGraph(nn.Module):
                 self.adj[i][j] = dis
                 self.adj[j][i] = dis
     def forward(self, x):
-        return gcn(x, self.adj)
+        return self.gcn(x, self.adj)
 '''
 class Graph(nn.Module):
     def __init__(self, g, nfeature, nhidden, noutput, dropout):

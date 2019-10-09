@@ -31,7 +31,7 @@ def get_word_embedding(word2vec, original_sentences):
         sentences.append(s)
     return sentences
 
-sentences = get_sentence("europarl-v7.cs-en.cs")
+sentences = get_sentence("../training/europarl-v7.cs-en.cs")
 
 word2vec = Word2Vec(size = 10)
 word2vec.build_vocab(sentences, min_count = 1)
@@ -46,7 +46,7 @@ input = torch.Tensor(word)
 input = input.reshape(-1, 2, 10)
 print(input[0])
 
-encoder = ModelEncoder(10, 10, 5, 10, 5, 10, 10);
+encoder = ModelEncoder(10, 10, 5, 10, 5, 10, 10, 8);
 print("train")
 hidden = encoder.init_hidden(2)
 # print(hidden)
