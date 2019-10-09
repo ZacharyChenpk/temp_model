@@ -30,10 +30,9 @@ class ModelEncoder(nn.Module):
         # layer_size * length * batch_size
         
         word_hidden_state = []
-        for gates in distances:
-            gcn = ONLSTMGraph(gates, self.gcn_input_size, self.gcn_hidden_size,
+        gcn = ONSLTMGraph(distances[-1], self.gcn_input_size, self.gcn_hidden_size,
                           self.gcn_output_size)
-            word_hidden_state(gcn(torch.zeros([length, batch_size])))
+        word_hidden_state(gcn(torch.zeros([length, batch_size])))
         
         return raw_output[-1], word_hidden_state
     
