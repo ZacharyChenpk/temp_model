@@ -17,6 +17,8 @@ from notree_model import Pos_choser, sentence_encoder, word_choser
 from notree_evaluate import predict_batch
 import notree_tree as tree
 from notree_tree import behave_seq_gen, print_tree
+from encoder import ModelEncoder
+from gensim.models.word2vec import Word2Vec
 
 parser = argparse.ArgumentParser(description='PyTorch RNN/LSTM Language Model')
 parser.add_argument('--data', type=str, default='data/penn/',
@@ -112,8 +114,13 @@ test_data_Y = batchify(corpus.test[1], test_batch_size, args)
 ntokens = len(corpus.dictionary)
 ntokens_out = len(corpus.dictionary_out)
 
+word2vec = Word2Vec(size = args.emsize)
+word2vec.build_vocab(corpus.train[0], min_count = 1)
+word2vec.train(corpus.train[0], total_examples = word2vec.corpus_count, epochs = word2vec.iter)
+
 model_pos = Pos_choser(ntokens, args.nodesize, args.emsize, len(corpus.dictionary_out.idx2word))
-model_encoder = sentence_encoder(ntokens, args.hidsize, args.emsize, args.nlayers, args.chunk_size, wdrop=0, dropouth=args.dropout)
+model_encoder = ModelEncoder(word2vec, args.emsize, args.hidsize, args.nlayers, args.emsizes,
+                 args.chunk_size, args.batch_size, args.hidsize, args.emsize, dropout = args.dropout)
 model_word = word_choser(ntokens, ntokens_out, args.hidsize, args.emsize, args.nodesize, args.chunk_size, args.nlayers)
 out_embedding = nn.Embedding(ntokens_out, args.emsize)
 
@@ -141,7 +148,8 @@ def batch_loss(X, Y):
     # waiting
     #   sen_embs: bsz * emb_dim
     #   hiddens: bsz * x_len * hid_dim
-    hiddens, sen_embs = model_encoder(X)
+    init_hidden = model_encoder(args.batch_size)
+    sen_embs, hiddens = model_encoder(X, init_hidden)
     # waiting
     word_loss = 0.0
     pos_loss = 0.0
@@ -267,3 +275,4 @@ except KeyboardInterrupt:
     print('Exiting from training early')
     model_save('models')
     print('| End of training | pos loss/epoch {:5.2f} | decoder ppl/epoch {:5.2f}'.format(torch.mean(torch.Tensor(global_pos_losses)), torch.mean(torch.Tensor(global_decoder_losses))))
+
