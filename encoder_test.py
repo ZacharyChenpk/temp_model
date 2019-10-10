@@ -46,7 +46,7 @@ input = torch.Tensor(word)
 input = input.reshape(-1, 2, 10)
 print(input[0])
 
-encoder = ModelEncoder(10, 10, 5, 10, 5, 10, 10, 8);
+encoder = ModelEncoder(10, 10, 5, 10, 5, 10, 8);
 print("train")
 hidden = encoder.init_hidden(2)
 # print(hidden)
