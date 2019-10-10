@@ -102,9 +102,9 @@ else:
 
 eval_batch_size = 10
 test_batch_size = 1
-print(corpus.train)
+# print(corpus.train)
 
-train_data_X = batchify(corpus.train[2], args.batch_size, args)
+train_data_X = batchify(corpus.train[0], args.batch_size, args)
 val_data_X = batchify(corpus.valid[0], eval_batch_size, args)
 test_data_X = batchify(corpus.test[0], test_batch_size, args)
 train_data_Y = batchify(corpus.train[1], args.batch_size, args)
@@ -115,11 +115,11 @@ ntokens = len(corpus.dictionary)
 ntokens_out = len(corpus.dictionary_out)
 
 word2vec = Word2Vec(size = args.emsize)
-word2vec.build_vocab(corpus.train[0], min_count = 1)
-word2vec.train(corpus.train[0], total_examples = word2vec.corpus_count, epochs = word2vec.iter)
+word2vec.build_vocab(corpus.train[2], min_count = 1)
+word2vec.train(corpus.train[2], total_examples = word2vec.corpus_count, epochs = word2vec.iter)
 
 model_pos = Pos_choser(ntokens, args.nodesize, args.emsize, len(corpus.dictionary_out.idx2word))
-model_encoder = ModelEncoder(word2vec, args.emsize, args.hidsize, args.nlayers, args.emsizes,
+model_encoder = ModelEncoder(word2vec, args.emsize, args.hidsize, args.nlayers, args.emsize,
                  args.chunk_size, args.batch_size, args.hidsize, args.emsize, dropout = args.dropout)
 model_word = word_choser(ntokens, ntokens_out, args.hidsize, args.emsize, args.nodesize, args.chunk_size, args.nlayers)
 out_embedding = nn.Embedding(ntokens_out, args.emsize)
@@ -136,20 +136,20 @@ if args.cuda:
 params = list(model_encoder.parameters()) + list(model_word.parameters())
 pos_params =  list(model_pos.parameters())
 total_params = sum(x.size()[0] * x.size()[1] if len(x.size()) > 1 else x.size()[0] for x in params + pos_params if x.size())
-print('Args:', args)
-print('Model total parameters:', total_params)
+# print('Args:', args)
+# print('Model total parameters:', total_params)
 
 #############################################
 # Training
 #############################################
 
-def batch_loss(X, Y):
+def batch_loss(sentences, X, Y):
     assert(len(X)==args.batch_size)
     # waiting
     #   sen_embs: bsz * emb_dim
     #   hiddens: bsz * x_len * hid_dim
     init_hidden = model_encoder(args.batch_size)
-    sen_embs, hiddens = model_encoder(X, init_hidden)
+    sen_embs, hiddens = model_encoder(sentences, init_hidden)
     print("size of sen_embs", sen_embs.size())
     print("size of hiddens", len(hiddens), len(hiddens[0]))
     # waiting
@@ -232,7 +232,7 @@ def train_one_epoch(epoch):
         optimizer_pos.zero_grad()
         optimizer_encoder.zero_grad()
 
-        pos_loss, word_loss = batch_loss(X, Y)
+        pos_loss, word_loss = batch_loss(sentences, X, Y)
         pos_loss.backward()
         word_loss.backward()
 
