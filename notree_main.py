@@ -104,7 +104,7 @@ eval_batch_size = 10
 test_batch_size = 1
 print(corpus.train)
 
-train_data_X = batchify(corpus.train[0], args.batch_size, args)
+train_data_X = batchify(corpus.train[2], args.batch_size, args)
 val_data_X = batchify(corpus.valid[0], eval_batch_size, args)
 test_data_X = batchify(corpus.test[0], test_batch_size, args)
 train_data_Y = batchify(corpus.train[1], args.batch_size, args)
@@ -150,6 +150,8 @@ def batch_loss(X, Y):
     #   hiddens: bsz * x_len * hid_dim
     init_hidden = model_encoder(args.batch_size)
     sen_embs, hiddens = model_encoder(X, init_hidden)
+    print("size of sen_embs", sen_embs.size())
+    print("size of hiddens", len(hiddens), len(hiddens[0]))
     # waiting
     word_loss = 0.0
     pos_loss = 0.0
@@ -217,6 +219,7 @@ def train_one_epoch(epoch):
     for i in range(len(train_data_X)):
         X = train_data_X[i]
         Y = train_data_Y[i]
+        print("size of X", len(X), len(X[0]))
         if args.cuda:
             X = X.cuda()
             Y = Y.cuda()
