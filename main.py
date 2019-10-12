@@ -14,6 +14,7 @@ from functools import reduce
 import data_pair as data
 from utils import batchify, repackage_hidden
 from model import Pos_choser, sentence_encoder, word_choser
+from encoder import ModelEncoder
 from evaluate import predict_batch
 import tree
 from tree import random_seq, print_tree
@@ -107,7 +108,9 @@ ntokens = len(corpus.dictionary)
 ntokens_out = len(corpus.dictionary_out)
 
 model_pos = Pos_choser(ntokens, args.nodesize, args.dropout)
-model_encoder = sentence_encoder(ntokens, args.hidsize, args.emsize, args.nlayers, args.chunk_size, wdrop=0, dropouth=args.dropout)
+#model_encoder = sentence_encoder(ntokens, args.hidsize, args.emsize, args.nlayers, args.chunk_size, wdrop=0, dropouth=args.dropout)
+model_encoder = ModelEncoder(args.emsize, args.hidsize, args.nlayers, args.emsize,
+                 args.chunk_size, args.emsize, args.emsize, args.dropout)
 model_word = word_choser(ntokens, ntokens_out, args.hidsize, args.emsize, args.chunk_size, args.nlayers)
 
 if args.resume:

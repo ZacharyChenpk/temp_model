@@ -64,9 +64,9 @@ class Corpus(object):
         assert os.path.exists(target_path)
         ### Add words to the dictionary
         self.dictionary.add_word('<start>')
-        # self.dictionary.add_word('<end>')
+        self.dictionary.add_word('<eod>')
         self.dictionary_out.add_word('<start>')
-        # self.dictionary_out.add_word('<end>')
+        self.dictionary_out.add_word('<eod>')
         with open(path, 'r') as f:
             tokens = 0
             for line in f:

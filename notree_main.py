@@ -10,38 +10,41 @@ import os
 import operator
 from random import sample, random, randint
 from functools import reduce
+import cProfile
 
 import notree_data as data
 from utils import batchify, repackage_hidden
 from notree_model import Pos_choser, sentence_encoder, word_choser
 from notree_evaluate import predict_batch
+from encoder import ModelEncoder
 import notree_tree as tree
 from notree_tree import behave_seq_gen, print_tree
+from gensim.models.word2vec import Word2Vec
 
 parser = argparse.ArgumentParser(description='PyTorch RNN/LSTM Language Model')
 parser.add_argument('--data', type=str, default='data/penn/',
                     help='location of the data corpus')
 parser.add_argument('--model', type=str, default='LSTM',
                     help='type of recurrent net (LSTM, QRNN, GRU)')
-parser.add_argument('--emsize', type=int, default=512,
+parser.add_argument('--emsize', type=int, default=128,
                     help='size of word embeddings')
-parser.add_argument('--hidsize', type=int, default=512,
+parser.add_argument('--hidsize', type=int, default=128,
                     help='size of hidden states in lstm')
-parser.add_argument('--nodesize', type=int, default=512,
+parser.add_argument('--nodesize', type=int, default=128,
                     help='size of nodes presentation in tree/graph')
-parser.add_argument('--nhid', type=int, default=1150,
+parser.add_argument('--nhid', type=int, default=150,
                     help='number of hidden units per layer')
 parser.add_argument('--chunk_size', type=int, default=16,
                     help='number of units per chunk')
-parser.add_argument('--nlayers', type=int, default=3,
+parser.add_argument('--nlayers', type=int, default=2,
                     help='number of layers')
-parser.add_argument('--poslr', type=float, default=0.003,
+parser.add_argument('--poslr', type=float, default=0.0003,
                     help='initial pos learning rate')
-parser.add_argument('--encoderlr', type=float, default=0.003,
+parser.add_argument('--encoderlr', type=float, default=0.0003,
                     help='initial encoder learning rate')
 parser.add_argument('--clip', type=float, default=0.25,
                     help='gradient clipping')
-parser.add_argument('--epochs', type=int, default=8000,
+parser.add_argument('--epochs', type=int, default=30,
                     help='upper epoch limit')
 parser.add_argument('--batch_size', type=int, default=80, metavar='N',
                     help='batch size')
@@ -75,15 +78,17 @@ def model_save(fn):
     if args.philly:
         fn = os.path.join(os.getcwd(), fn)
     with open(fn, 'wb') as f:
-        torch.save([model_pos, model_encoder, model_word, optimizer, out_embedding], f)
+        torch.save([model_pos, model_encoder, model_word, optimizer, weight, out_embedding], f)
 
 
 def model_load(fn):
-    global model_pos, model_encoder, model_word, optimizer, out_embedding
+    global model_pos, model_encoder, model_word, optimizer, weight, out_embedding
     if args.philly:
         fn = os.path.join(os.getcwd(), fn)
     with open(fn, 'rb') as f:
-        model_pos, model_encoder, model_word, optimizer, out_embedding = torch.load(f)
+        model_pos, model_encoder, model_word, optimizer, weight, out_embedding = torch.load(f)
+
+
 
 import hashlib
 
@@ -100,7 +105,19 @@ else:
 
 eval_batch_size = 10
 test_batch_size = 1
-print(corpus.train)
+#print(corpus.train)
+
+word2vec = Word2Vec(size = args.emsize)
+word2vec.build_vocab(corpus.dictionary.idx2word, min_count = 1)
+word2vec.train(open(os.path.join(args.data, 'train_x.txt')), total_examples = word2vec.corpus_count, epochs = word2vec.iter)
+weight = torch.zeros(len(corpus.dictionary.idx2word), args.emsize)
+
+for i in range(len(corpus.dictionary.idx2word)):
+    try:
+        index = word_to_idx[corpus.dictionary.idx2word[i]]
+    except:
+        continue
+    weight[index, :] = torch.from_numpy(word2vec[corpus.dictionary.idx2word[i]])
 
 train_data_X = batchify(corpus.train[0], args.batch_size, args)
 val_data_X = batchify(corpus.valid[0], eval_batch_size, args)
@@ -109,12 +126,15 @@ train_data_Y = batchify(corpus.train[1], args.batch_size, args)
 val_data_Y = batchify(corpus.valid[1], eval_batch_size, args)
 test_data_Y = batchify(corpus.test[1], test_batch_size, args)
 
-ntokens = len(corpus.dictionary)
-ntokens_out = len(corpus.dictionary_out)
+ntokens = len(corpus.dictionary.idx2word)
+ntokens_out = len(corpus.dictionary_out.idx2word)
 
 model_pos = Pos_choser(ntokens, args.nodesize, args.emsize, len(corpus.dictionary_out.idx2word))
-model_encoder = sentence_encoder(ntokens, args.hidsize, args.emsize, args.nlayers, args.chunk_size, wdrop=0, dropouth=args.dropout)
+model_encoder = sentence_encoder(ntokens, args.hidsize, args.emsize, args.nlayers, args.chunk_size, weight, wdrop=0, dropouth=args.dropout)
+#model_encoder = ModelEncoder(args.emsize, args.hidsize, args.nlayers, args.emsize,
+#                 args.chunk_size, args.emsize, args.emsize, args.dropout)
 model_word = word_choser(ntokens, ntokens_out, args.hidsize, args.emsize, args.nodesize, args.chunk_size, args.nlayers)
+
 out_embedding = nn.Embedding(ntokens_out, args.emsize)
 
 if args.resume:
@@ -126,7 +146,7 @@ if args.cuda:
     model_encoder = model_encoder.cuda()
     model_word = model_word.cuda()
 
-params = list(model_encoder.parameters()) + list(model_word.parameters())
+params = list(model_encoder.parameters()) + list(model_word.parameters()) + list(out_embedding.parameters())
 pos_params =  list(model_pos.parameters())
 total_params = sum(x.size()[0] * x.size()[1] if len(x.size()) > 1 else x.size()[0] for x in params + pos_params if x.size())
 print('Args:', args)
@@ -139,12 +159,18 @@ print('Model total parameters:', total_params)
 def batch_loss(X, Y):
     assert(len(X)==args.batch_size)
     # waiting
+    #hid = model_encoder.init_hidden(args.batch_size)
+    #hid = repackage_hidden(hid)
+    #X_emb = in_embedding(X)
+    #X_emb = list(map(lambda x:self.encoder(torch.LongTensor([x])).squeeze(0), X))
+    #X_emb = torch.transpose(X_emb, 1, 0)
     #   sen_embs: bsz * emb_dim
     #   hiddens: bsz * x_len * hid_dim
     hiddens, sen_embs = model_encoder(X)
     # waiting
     word_loss = 0.0
     pos_loss = 0.0
+    print(len(X),end=' ')
     for i in range(len(X)):
         sen_emb = sen_embs[i]
         hidden = hiddens[i]
@@ -182,6 +208,7 @@ def batch_loss(X, Y):
                 return F.binary_cross_entropy(scores, ans_dist_pos)
 
             pos_loss = pos_loss + sum(map(calculate_loss, range(len(able_words[a])))) / len(able_words[a])
+        del ans_ind, choose_words, trees_before_insert, graphs_before_insert, gcns, aggrs
     return word_loss, pos_loss
 
 
@@ -222,8 +249,10 @@ def train_one_epoch(epoch):
         optimizer_encoder.zero_grad()
 
         pos_loss, word_loss = batch_loss(X, Y)
+        print('backwarding')
         pos_loss.backward()
         word_loss.backward()
+        print('batch', i, 'finished')
 
         if args.clip: 
             torch.nn.utils.clip_grad_norm_(params, args.clip)
@@ -258,12 +287,15 @@ global_decoder_losses = []
 stored_loss = 100000000
 
 # use Ctrl+C to break out of training at any point
-try:
-    print('traindataX', train_data_X)
-    for epoch in range(1, args.epochs + 1):
-        train_one_epoch(epoch)
+#try:
+print('traindataX')
+#cProfile.run('train_one_epoch(1)')
+for epoch in range(1, args.epochs + 1):
+    train_one_epoch(epoch)
+'''
 except KeyboardInterrupt:
     print('-' * 89)
     print('Exiting from training early')
     model_save('models')
     print('| End of training | pos loss/epoch {:5.2f} | decoder ppl/epoch {:5.2f}'.format(torch.mean(torch.Tensor(global_pos_losses)), torch.mean(torch.Tensor(global_decoder_losses))))
+'''

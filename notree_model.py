@@ -74,7 +74,7 @@ class Pos_choser(nn.Module):
 
 class sentence_encoder(nn.Module):
     ### take in a sentence, return its encoded embedding and hidden states(for attention)
-    def __init__(self, ntoken, h_dim, emb_dim, nlayers, chunk_size, wdrop=0, dropouth=0.5):
+    def __init__(self, ntoken, h_dim, emb_dim, nlayers, chunk_size, init_emb, wdrop=0, dropouth=0.5):
         super(sentence_encoder, self).__init__()
         self.lockdrop = LockedDropout()
         self.hdrop = nn.Dropout(dropouth)
@@ -91,16 +91,20 @@ class sentence_encoder(nn.Module):
         self.dropouth = dropouth
 
     def forward(self, inp_sentence):
-        print(inp_sentence.size)
+        #print(inp_sentence.size)
         emb = list(map(lambda x:self.encoder(torch.LongTensor([x])).squeeze(0), inp_sentence))
         #print('inp sen: ', inp_sentence)
         #print('emb: ', emb)
-        h0 = torch.randn(self.nlayers, 1, self.h_dim)
-        c0 = torch.randn(self.nlayers, 1, self.h_dim)
+        h0 = torch.randn(self.nlayers, 1, self.h_dim, requires_grad=False)
+        c0 = torch.randn(self.nlayers, 1, self.h_dim, requires_grad=False)
         output = []
         h_n = torch.zeros(len(inp_sentence), self.h_dim)
         for i in range(len(emb)):
-            opt,(h,c)=self.rnn(torch.Tensor(emb[i]).unsqueeze(1), (h0,c0))
+            #print(torch.Tensor(emb[i]).unsqueeze(1).size())
+            if len(emb[i]) == 0:
+                opt,(h,c)=self.rnn(torch.zeros(1, 1, self.emb_dim, requires_grad=False), (h0,c0))
+            else:
+                opt,(h,c)=self.rnn(torch.Tensor(emb[i]).unsqueeze(1), (h0,c0))
             output.append(opt.squeeze(1))
             h_n[i]=h.squeeze(1)[self.nlayers-1]
 
