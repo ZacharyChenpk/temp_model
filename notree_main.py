@@ -19,6 +19,10 @@ from notree_evaluate import predict_batch
 from encoder import ModelEncoder
 import notree_tree as tree
 from notree_tree import behave_seq_gen, print_tree
+<<<<<<< HEAD
+=======
+from encoder import ModelEncoder
+>>>>>>> f3379fb0be3fa3ad2827f614fec0cab98b62f461
 from gensim.models.word2vec import Word2Vec
 
 parser = argparse.ArgumentParser(description='PyTorch RNN/LSTM Language Model')
@@ -105,6 +109,7 @@ else:
 
 eval_batch_size = 10
 test_batch_size = 1
+<<<<<<< HEAD
 #print(corpus.train)
 
 word2vec = Word2Vec(size = args.emsize)
@@ -118,6 +123,9 @@ for i in range(len(corpus.dictionary.idx2word)):
     except:
         continue
     weight[index, :] = torch.from_numpy(word2vec[corpus.dictionary.idx2word[i]])
+=======
+# print(corpus.train)
+>>>>>>> f3379fb0be3fa3ad2827f614fec0cab98b62f461
 
 train_data_X = batchify(corpus.train[0], args.batch_size, args)
 val_data_X = batchify(corpus.valid[0], eval_batch_size, args)
@@ -129,10 +137,19 @@ test_data_Y = batchify(corpus.test[1], test_batch_size, args)
 ntokens = len(corpus.dictionary.idx2word)
 ntokens_out = len(corpus.dictionary_out.idx2word)
 
+word2vec = Word2Vec(size = args.emsize)
+word2vec.build_vocab(corpus.train[2], min_count = 1)
+word2vec.train(corpus.train[2], total_examples = word2vec.corpus_count, epochs = word2vec.iter)
+
 model_pos = Pos_choser(ntokens, args.nodesize, args.emsize, len(corpus.dictionary_out.idx2word))
+<<<<<<< HEAD
 model_encoder = sentence_encoder(ntokens, args.hidsize, args.emsize, args.nlayers, args.chunk_size, weight, wdrop=0, dropouth=args.dropout)
 #model_encoder = ModelEncoder(args.emsize, args.hidsize, args.nlayers, args.emsize,
 #                 args.chunk_size, args.emsize, args.emsize, args.dropout)
+=======
+model_encoder = ModelEncoder(word2vec, args.emsize, args.hidsize, args.nlayers, args.emsize,
+                 args.chunk_size, args.batch_size, args.hidsize, args.emsize, dropout = args.dropout)
+>>>>>>> f3379fb0be3fa3ad2827f614fec0cab98b62f461
 model_word = word_choser(ntokens, ntokens_out, args.hidsize, args.emsize, args.nodesize, args.chunk_size, args.nlayers)
 
 out_embedding = nn.Embedding(ntokens_out, args.emsize)
@@ -149,14 +166,14 @@ if args.cuda:
 params = list(model_encoder.parameters()) + list(model_word.parameters()) + list(out_embedding.parameters())
 pos_params =  list(model_pos.parameters())
 total_params = sum(x.size()[0] * x.size()[1] if len(x.size()) > 1 else x.size()[0] for x in params + pos_params if x.size())
-print('Args:', args)
-print('Model total parameters:', total_params)
+# print('Args:', args)
+# print('Model total parameters:', total_params)
 
 #############################################
 # Training
 #############################################
 
-def batch_loss(X, Y):
+def batch_loss(sentences, X, Y):
     assert(len(X)==args.batch_size)
     # waiting
     #hid = model_encoder.init_hidden(args.batch_size)
@@ -166,7 +183,10 @@ def batch_loss(X, Y):
     #X_emb = torch.transpose(X_emb, 1, 0)
     #   sen_embs: bsz * emb_dim
     #   hiddens: bsz * x_len * hid_dim
-    hiddens, sen_embs = model_encoder(X)
+    init_hidden = model_encoder(args.batch_size)
+    sen_embs, hiddens = model_encoder(sentences, init_hidden)
+    print("size of sen_embs", sen_embs.size())
+    print("size of hiddens", len(hiddens), len(hiddens[0]))
     # waiting
     word_loss = 0.0
     pos_loss = 0.0
@@ -236,6 +256,7 @@ def train_one_epoch(epoch):
     for i in range(len(train_data_X)):
         X = train_data_X[i]
         Y = train_data_Y[i]
+        print("size of X", len(X), len(X[0]))
         if args.cuda:
             X = X.cuda()
             Y = Y.cuda()
@@ -248,8 +269,12 @@ def train_one_epoch(epoch):
         optimizer_pos.zero_grad()
         optimizer_encoder.zero_grad()
 
+<<<<<<< HEAD
         pos_loss, word_loss = batch_loss(X, Y)
         print('backwarding')
+=======
+        pos_loss, word_loss = batch_loss(sentences, X, Y)
+>>>>>>> f3379fb0be3fa3ad2827f614fec0cab98b62f461
         pos_loss.backward()
         word_loss.backward()
         print('batch', i, 'finished')
@@ -298,4 +323,8 @@ except KeyboardInterrupt:
     print('Exiting from training early')
     model_save('models')
     print('| End of training | pos loss/epoch {:5.2f} | decoder ppl/epoch {:5.2f}'.format(torch.mean(torch.Tensor(global_pos_losses)), torch.mean(torch.Tensor(global_decoder_losses))))
+<<<<<<< HEAD
 '''
+=======
+
+>>>>>>> f3379fb0be3fa3ad2827f614fec0cab98b62f461

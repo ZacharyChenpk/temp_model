@@ -93,4 +93,4 @@ class Corpus(object):
         ret1, ret2 = list(map(self.sen_tokenize, open(path, 'r'))), list(map(lambda x:self.sen_tokenize(x, True), open(target_path, 'r')))
         assert(len(ret1)==len(ret2))
 
-        return np.asarray(ret1), np.asarray(ret2)
+        return np.asarray(ret1), np.asarray(ret2), list(zip(open(path, 'r')))
