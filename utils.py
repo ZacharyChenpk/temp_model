@@ -14,13 +14,8 @@ def batchify(data, bsz, args):
     nbatch = data.size // bsz
     # Trim off any extra elements that wouldn't cleanly fit (remainders).
     data = data[0:(nbatch * bsz)]
-<<<<<<< HEAD
     #print(data)
     #print(type(data))
-=======
-    # print(data)
-    # print(type(data))
->>>>>>> f3379fb0be3fa3ad2827f614fec0cab98b62f461
     # Evenly divide the data across the bsz batches.
     data = data.reshape((bsz, -1)).T ###.contiguous()
     '''
