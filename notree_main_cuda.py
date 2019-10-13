@@ -14,7 +14,7 @@ import cProfile
 
 import notree_data as data
 from utils import batchify, repackage_hidden
-from notree_model import Pos_choser, sentence_encoder, word_choser
+from notree_model_cuda import Pos_choser, sentence_encoder, word_choser
 from notree_evaluate import predict_batch
 from encoder import ModelEncoder
 import notree_tree as tree
@@ -72,7 +72,7 @@ parser.add_argument('--when', nargs="+", type=int, default=[-1],
 
 args = parser.parse_args()
 args.tied = True
-args.cuda = False
+args.cuda = True
 args.philly = True
 args.save_every = 1000
 
@@ -112,6 +112,8 @@ word2vec = Word2Vec(size = args.emsize)
 word2vec.build_vocab(corpus.dictionary.idx2word, min_count = 1)
 word2vec.train(open(os.path.join(args.data, 'train_x.txt')), total_examples = word2vec.corpus_count, epochs = word2vec.iter)
 weight = torch.zeros(len(corpus.dictionary.idx2word), args.emsize)
+if args.cuda:
+    weight = weight.cuda()
 
 for i in range(len(corpus.dictionary.idx2word)):
     try:
@@ -142,10 +144,10 @@ if args.resume:
     print('Resuming models ...')
     model_load(args.resume)
 
-if args.cuda:
-    model_pos = model_pos.cuda()
-    model_encoder = model_encoder.cuda()
-    model_word = model_word.cuda()
+model_pos = model_pos.cuda()
+model_encoder = model_encoder.cuda()
+model_word = model_word.cuda()
+out_embedding = out_embedding.cuda()
 
 params = list(model_encoder.parameters()) + list(model_word.parameters()) + list(out_embedding.parameters())
 pos_params =  list(model_pos.parameters())
@@ -176,17 +178,17 @@ def batch_loss(X, Y):
     pos_loss = 0.0
     print(len(X),end=' ')
     for i in range(len(X)):
-        sen_emb = sen_embs[i]
-        hidden = hiddens[i]
+        sen_emb = sen_embs[i].cuda()
+        hidden = hiddens[i].cuda()
         x_len = len(X[i])
         y_len = len(Y[i])
         tar_sen = [corpus.dictionary_out.idx2word[a] for a in Y[i]]
         ans_ind, choose_words, trees_before_insert, final_tree = behave_seq_gen(tar_sen)
-        graphs_before_insert = [a.tree2graph(out_embedding, corpus.dictionary_out, args.nodesize) for a in trees_before_insert]
+        graphs_before_insert = [a.tree2graph(out_embedding, corpus.dictionary_out, args.nodesize, cuda=True) for a in trees_before_insert]
         # gcns: y_len * node_num * node_dim
         # aggrs: y_len * node_dim
         gcns = [a.the_gcn(model_pos.gcn) for a in graphs_before_insert]
-        aggrs = torch.FloatTensor([a.the_aggr().tolist() for a in graphs_before_insert])
+        aggrs = torch.FloatTensor([a.the_aggr().tolist() for a in graphs_before_insert]).cuda()
         #print(sen_embs.size())
         #print(sen_emb.size())
         
@@ -195,13 +197,17 @@ def batch_loss(X, Y):
         able_inds = [[corpus.dictionary_out.word2idx[b] for b in a] for a in able_words]
         prob_vals = [1.0/len(a) for a in able_inds]
         ans_dist = torch.zeros(y_len, ntokens_out, requires_grad=False)
+        if args.cuda:
+            ans_dist = ans_dist.cuda()
         for a in range(y_len):
             ans_dist[a][able_inds[a]] = prob_vals[a]
         word_loss = word_loss + F.binary_cross_entropy(output, ans_dist)
         
         ans_dist2 = torch.zeros(ntokens_out, requires_grad=False)
+        if args.cuda:
+            ans_dist2 = ans_dist2.cuda()
         ans_dist2[corpus.dictionary_out.word2idx['<eod>']]=1
-        final_graph = final_tree.tree2graph(out_embedding, corpus.dictionary_out, args.nodesize)
+        final_graph = final_tree.tree2graph(out_embedding, corpus.dictionary_out, args.nodesize, cuda=True)
         final_graph.the_gcn(model_pos.gcn)
         output2 = model_word(sen_emb, hidden, final_graph.the_aggr().unsqueeze(0))
         word_loss = word_loss + F.binary_cross_entropy(output2, ans_dist2)
@@ -212,7 +218,7 @@ def batch_loss(X, Y):
             def calculate_loss(x):
                 _, leave_inds, scores = model_pos(trees_before_insert[a], able_words[a][x], out_embedding, corpus.dictionary_out)
                 prob_vals = 1.0/len(able_pos[x])
-                ans_dist_pos = torch.zeros(scores.size(), requires_grad=False)
+                ans_dist_pos = torch.zeros(scores.size(), requires_grad=False).cuda()
                 ids = [leave_inds.index(the_id) for the_id in able_pos[x]]
                 ans_dist_pos[ids] = prob_vals
                 #print(scores, "###", ans_dist_pos)
@@ -249,9 +255,9 @@ def train_one_epoch(epoch):
         X = train_data_X[i]
         Y = train_data_Y[i]
         #print("size of X", len(X), len(X[0]))
-        if args.cuda:
-            X = X.cuda()
-            Y = Y.cuda()
+        #if args.cuda:
+        #    X = X.cuda()
+        #    Y = Y.cuda()
 
         model_pos.train()
         model_encoder.train()
@@ -285,7 +291,7 @@ def train_one_epoch(epoch):
             print('output sentence:', Ys[0])
             print_tree(Ytrees[0], show_index=True)
         '''
-        print('epoch: {0}, pos_loss:{1}, word_loss:{2}, sentence/s: {3}'.format(epoch, pos_loss, word_loss, int(len(X)/(time.time()-start_time))))
+        print('epoch: {0}, pos_loss:{1}, word_loss:{2}, sentence/s: {3}'.format(epoch, pos_loss, word_loss, len(X)/(time.time()-start_time)))
         global_pos_losses.append(pos_loss)
         global_decoder_losses.append(word_loss)
 

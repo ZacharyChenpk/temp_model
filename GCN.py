@@ -34,17 +34,24 @@ class GraphConvolution(Module):
             return output
 
 class GCN(Module):
-    def __init__(self, nfeature, nhidden, noutput, dropout):
+    def __init__(self, nfeature, nhidden, noutput, dropout, cuda=False):
         super(GCN, self).__init__()
         self.gc1 = GraphConvolution(nfeature, nhidden)
         self.gc2 = GraphConvolution(nhidden, noutput)
+        if cuda:
+            self.gc1 = self.gc1.cuda()
+            self.gc2 = self.gc2.cuda()
         self.dropout = dropout
+        self.iscuda = cuda
 
     def forward(self, x, adj):
         adjt = adj.transpose(0, 1)
         c = (adjt > adj).float()
         adj = adj + adjt.mul(c) - adj.mul(c)
-        adj = adj + torch.eye(adj.shape[0])
+        eye = torch.eye(adj.shape[0], requires_grad=False)
+        if self.iscuda:
+            eye = eye.cuda()
+        adj = adj + eye
 
         x = F.relu(self.gc1(x, adj))
         x = F.dropout(x, self.dropout, training=self.training)
@@ -87,7 +94,7 @@ class Graph(nn.Module):
         return self.gcn(x, self.adj)
 '''
 class Graph(object):
-    def __init__(self, nodenum, nodedim, edgedim):
+    def __init__(self, nodenum, nodedim, edgedim, cuda=False):
         self.nodenum = nodenum
         self.nodedim = nodedim
         self.edgedim = edgedim
@@ -95,6 +102,10 @@ class Graph(object):
         self.adj = torch.zeros(nodenum, nodenum)
         self.edge_embs = torch.zeros(nodenum, nodenum, edgedim)
         self.node_names = [''] * nodenum
+        if cuda:
+            self.node_embs = self.node_embs.cuda()
+            self.adj = self.adj.cuda()
+            self.edge_embs = self.edge_embs.cuda()
 
     def hiddenG_init(self):
         for i in range(self.nodenum):
@@ -110,7 +121,7 @@ class Graph(object):
         #word_dis = torch.zeros(len(dictionary.idx2word), dtype = torch.long)
         #print(len(dictionary.idx2word))
         #word_dis[word_id] = 1
-        the_emb = sen_encoder(torch.LongTensor([word_id]))
+        the_emb = sen_encoder(torch.LongTensor([word_id]).cuda())
         #print('node_embs size:', self.node_embs.size())
         #print('the_emb size:', the_emb.size())
         self.node_embs[tree.index] = the_emb

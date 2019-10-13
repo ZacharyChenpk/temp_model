@@ -30,6 +30,8 @@ parser.add_argument('--resume', type=str, default='',
                     help='path of model to resume')
 parser.add_argument('--threshold', type=float, default=0.3,
                     help='the threshold of p to shut down the decoding and finish an output')
+parser.add_argument('--maxlen', type=float, default=80,
+                    help='the maximum length of output sentence')
 
 args = parser.parse_args()
 args.philly = True
@@ -47,33 +49,36 @@ if __name__ == "__main__":
 
 ### Load trained model from files
 def model_load(fn):
-    global model_pos, model_encoder, model_word, optimizer, out_embedding
+    global model_pos, model_encoder, model_word, optimizer, weight, out_embedding
     if args.philly:
         fn = os.path.join(os.getcwd(), fn)
     with open(fn, 'rb') as f:
-        model_pos, model_encoder, model_word, optimizer, out_embedding = torch.load(f)
+        model_pos, model_encoder, model_word, optimizer, weight, out_embedding = torch.load(f)
 
 ### Input a encoding of a sentence, return the decoding result and corresponding tree in timestamps
 def encode2seq(model_pos, model_encoder, model_word, code, hiddens, corpus, threshold, strategy='greedy'):
     curtree = Tree('<start>')
     ht = torch.zeros(model_word.nlayers, 1, model_word.hidden_dim)
     ct = torch.zeros(model_word.nlayers, 1, model_word.hidden_dim)
+    a = 0
     while True:
         if strategy == 'greedy':
             cur_graph = curtree.tree2graph(model_encoder.encoder, corpus.dictionary_out, model_pos.node_dim)
             cur_graph.the_gcn(model_pos.gcn)
             tree_emb = cur_graph.the_aggr()
             word_dist, ht, ct = model_word(code, hiddens, tree_emb, ht, ct)
-            if max(word_dist) < threshold:
-                break
+            #if max(word_dist) < threshold:
+            #    break
             chosen_word = corpus.dictionary_out.idx2word[int(torch.argmax(word_dist))]
-            leaves, leave_inds, pos_dist = model_pos(curtree, chosen_word, out_embedding, dictionary_out)
+            if chosen_word == '<eod>' or a >= args.maxlen:
+                break
+            leaves, leave_inds, pos_dist = model_pos(curtree, chosen_word, out_embedding, corpus.dictionary_out)
             tar_pos = leave_inds[int(torch.argmax(pos_dist))]
             curtree.insert_son(tar_pos, chosen_word, Training=False)
-            curtree.make_index()
-            print_tree(curtree, True)
+            a = curtree.make_index()
+            #print_tree(curtree, True)
     ### Remove special token and generate sentence
-    words = map(lambda x:'' if x[0]=='<' else x, curtree.horizontal_scan(contain_end=False))
+    words = map(lambda x:'' if x[0]=='<' else x+' ', curtree.horizontal_scan(contain_end=False))
     return reduce(operator.add, words), curtree
 
 ### Input a batch of sentence in words, return its generated sentence and tree

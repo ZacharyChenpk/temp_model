@@ -53,10 +53,10 @@ class Tree():
             tmp = tmp + self.right.nodenum()
         return tmp
 
-    def tree2graph(self, sen_encoder, dictionary, nodedim):
+    def tree2graph(self, sen_encoder, dictionary, nodedim, cuda=False):
         ### just act like its name, waiting to finish
         nodenum = self.make_index() + 1
-        the_graph = Graph(nodenum, nodedim, nodedim)
+        the_graph = Graph(nodenum, nodedim, nodedim, cuda)
         the_graph.match_tree(self, sen_encoder, dictionary)
         return the_graph
 
@@ -105,8 +105,8 @@ class Tree():
                 return False
             return True
         else:
-            if self.left == False or self.left.insert_son(father_index, son_root) == False:
-                return self.right and self.right.insert_son(father_index, son_root)
+            if self.left == False or self.left.insert_son(father_index, son_root, Training) == False:
+                return self.right and self.right.insert_son(father_index, son_root, Training)
             return True
 
     def find_able_pos(self, word, flag=False):
@@ -150,14 +150,16 @@ def behave_seq_gen(sen):
     if l == 1:
         ans_ind = [0]
         trees_before_insert = [cur_tree]
+        final_tree = copy.deepcopy(cur_tree)
+        final_tree.insert_son(0, sen[0])
         choose_words = sen
-        return ans_ind, choose_words, trees_before_insert
+        return ans_ind, choose_words, trees_before_insert, final_tree
     while True:
         alleaves = cur_tree.leaves(True)
         judge = lambda x: True if ((x.left == False and len(x.L_able)>0) or (x.right == False and len(x.R_able)>0)) else False
         leaves = [leave for leave in alleaves if judge(leave)]
         if len(leaves) == 0:
-            return ans_ind, choose_words, trees_before_insert
+            return ans_ind, choose_words, trees_before_insert, cur_tree
         ran_split = random.randint(0,len(leaves)-1) if len(leaves)>1 else 0
         ran_parent = leaves[ran_split]
         ans_ind.append(ran_parent.index)
