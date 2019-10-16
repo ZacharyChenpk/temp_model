@@ -117,11 +117,16 @@ class Graph(object):
 
     def match_tree(self, tree, sen_encoder, dictionary):
         #embeder = sen_encoder.encoder
-        word_id = dictionary.word2idx[tree.root]
+        
+        #word_id = dictionary.word2idx[tree.root]
+        
         #word_dis = torch.zeros(len(dictionary.idx2word), dtype = torch.long)
         #print(len(dictionary.idx2word))
         #word_dis[word_id] = 1
-        the_emb = sen_encoder(torch.LongTensor([word_id]).cuda())
+        
+        #the_emb = sen_encoder(torch.LongTensor([word_id]).cuda())
+        the_emb = tree.emb
+        
         #print('node_embs size:', self.node_embs.size())
         #print('the_emb size:', the_emb.size())
         self.node_embs[tree.index] = the_emb
@@ -140,7 +145,7 @@ class Graph(object):
         self.encoder.weight.data.uniform_(-initrange, initrange)
 
     def the_gcn(self, gcn):
-        self.node_embs = gcn(self.node_embs, self.adj)
+        # self.node_embs = gcn(self.node_embs, self.adj)
         return self.node_embs
 
     def the_aggr(self):

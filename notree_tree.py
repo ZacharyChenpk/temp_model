@@ -11,8 +11,9 @@ class Tree():
     ### The MASK is used to copy trees while training the position and word choser
     ### We used the processing tree as the input of training
     ### Its word is contained in ROOT
-    def __init__(self, root):
+    def __init__(self, root, embedding):
         self.root = root
+        self.emb = embedding(root)
         self.index = 0
         self.left = False
         self.right = False
@@ -87,16 +88,16 @@ class Tree():
         return False
 
     ### Insert a node with given word
-    def insert_son(self, father_index, son_root, Training = True):
+    def insert_son(self, father_index, son_root, embedding, Training = True):
         if self.index == father_index:
             if (not self.left) and (len(self.L_able)>0 or not Training):
-                self.left = Tree(son_root)
+                self.left = Tree(son_root, embedding)
                 if son_root != '<end>' and Training:
                     i = self.L_able.index(son_root)
                     self.left.L_able = self.L_able[0:i] if i>0 else []
                     self.left.R_able = self.L_able[i+1:] if i+1<len(self.L_able) else []
             elif not self.right: 
-                self.right = Tree(son_root)
+                self.right = Tree(son_root, embedding)
                 if son_root != '<end>' and Training:
                     i = self.R_able.index(son_root)
                     self.right.L_able = self.R_able[0:i] if i>0 else []
@@ -105,8 +106,8 @@ class Tree():
                 return False
             return True
         else:
-            if self.left == False or self.left.insert_son(father_index, son_root, Training) == False:
-                return self.right and self.right.insert_son(father_index, son_root, Training)
+            if self.left == False or self.left.insert_son(father_index, son_root, embedding, Training) == False:
+                return self.right and self.right.insert_son(father_index, son_root, embedding, Training)
             return True
 
     def find_able_pos(self, word, flag=False):
@@ -138,8 +139,8 @@ class Tree():
         return list(set(tmp))
 
 
-def behave_seq_gen(sen):
-    cur_tree = Tree('<start>')
+def behave_seq_gen(sen, embedding):
+    cur_tree = Tree('<start>', embedding)
     l = len(sen)
     ran_split = random.randint(1,l)
     cur_tree.L_able = sen[0:ran_split] if ran_split>0 else []
@@ -151,7 +152,7 @@ def behave_seq_gen(sen):
         ans_ind = [0]
         trees_before_insert = [cur_tree]
         final_tree = copy.deepcopy(cur_tree)
-        final_tree.insert_son(0, sen[0])
+        final_tree.insert_son(0, sen[0], embedding)
         choose_words = sen
         return ans_ind, choose_words, trees_before_insert, final_tree
     while True:
@@ -168,7 +169,7 @@ def behave_seq_gen(sen):
         # print(ran_parent.root,':',ables)
         ran_split = random.randint(0,len(ables)-1) if len(ables)>1 else 0
         choose_words.append(ables[ran_split])
-        cur_tree.insert_son(ran_parent.index, ables[ran_split])
+        cur_tree.insert_son(ran_parent.index, ables[ran_split], embedding)
         cur_tree.make_index()
 
 

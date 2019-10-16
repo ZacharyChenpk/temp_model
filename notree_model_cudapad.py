@@ -8,6 +8,7 @@ from locked_dropout import LockedDropout
 from ON_LSTM import ONLSTMStack
 from GCN import Graph, GCN
 from tree import Tree
+from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 class Pos_choser(nn.Module):
     ### Take in the tree currently generated, and return the distribution of positions to insert the next node
@@ -79,7 +80,7 @@ class sentence_encoder(nn.Module):
         #self.lockdrop = LockedDropout()
         #self.hdrop = nn.Dropout(dropouth)
         self.encoder = nn.Embedding.from_pretrained(init_emb).cuda()
-        self.rnn = nn.LSTM(emb_dim, h_dim, nlayers)
+        self.rnn = nn.LSTM(emb_dim, h_dim, nlayers, batch_first = True)
         self.rnn = self.rnn.cuda()
         initrange = 0.1
         self.encoder.weight.data.uniform_(-initrange, initrange)
@@ -91,28 +92,24 @@ class sentence_encoder(nn.Module):
         self.wdrop = wdrop
         self.dropouth = dropouth
 
-    def forward(self, inp_sentence):
-        #print(inp_sentence.size)
-        emb = list(map(lambda x:self.encoder(torch.LongTensor([x]).cuda()).squeeze(0), inp_sentence))
-        #print('inp sen: ', inp_sentence)
-        #print('emb: ', emb)
-        h0 = torch.randn(self.nlayers, 1, self.h_dim, requires_grad=False).cuda()
-        c0 = torch.randn(self.nlayers, 1, self.h_dim, requires_grad=False).cuda()
-        output = []
-        h_n = torch.zeros(len(inp_sentence), self.h_dim).cuda()
+    def forward(self, inp_X, inp_xlens):
+        # inp_X: bsz * T
+        emb = self.encoder(inp_X)
+        # emb: bsz * T * dim_emb
+        packed_emb = pack_padded_sequence(emb, inp_xlens, batch_first=True, enforce_sorted=False)
+        opt, (h,c) = self.rnn(packed_emb)
+        opt, opt_lens = pad_packed_sequence(opt, batch_first=True)
+        '''
         for i in range(len(emb)):
             #print(torch.Tensor(emb[i]).unsqueeze(1).size())
             if len(emb[i]) == 0:
                 opt,(h,c)=self.rnn(torch.zeros(1, 1, self.emb_dim, requires_grad=False).cuda(), (h0,c0))
             else:
                 opt,(h,c)=self.rnn(emb[i].unsqueeze(1), (h0,c0))
-            output.append(opt.squeeze(1))
-            h_n[i]=h.squeeze(1)[self.nlayers-1]
-
-        #print('hn:', h_n.size())
-
-        # output is the hidden states, and h_n is the encoding result
-        return output, h_n
+            hiddens.append(opt.squeeze(1))
+            encoder_return[i]=h.squeeze(1)[self.nlayers-1]
+        '''
+        return opt, opt_lens, h[-1]
 
     def init_hidden(self, bsz):
         return 0

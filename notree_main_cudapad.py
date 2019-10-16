@@ -13,8 +13,8 @@ from functools import reduce
 import cProfile
 
 import notree_data as data
-from utils import batchify, repackage_hidden
-from notree_model_cuda import Pos_choser, sentence_encoder, word_choser
+from utils_pad import batchify, repackage_hidden
+from notree_model_cudapad import Pos_choser, sentence_encoder, word_choser
 from notree_evaluate import predict_batch
 from encoder import ModelEncoder
 import notree_tree as tree
@@ -136,12 +136,12 @@ for i in range(len(corpus.dictionary_out.idx2word)):
         continue
     weight2[index, :] = torch.from_numpy(word2vec2[corpus.dictionary_out.idx2word[i]])
 
-train_data_X = batchify(corpus.train[0], args.batch_size, args)
-val_data_X = batchify(corpus.valid[0], eval_batch_size, args)
-test_data_X = batchify(corpus.test[0], test_batch_size, args)
-train_data_Y = batchify(corpus.train[1], args.batch_size, args)
-val_data_Y = batchify(corpus.valid[1], eval_batch_size, args)
-test_data_Y = batchify(corpus.test[1], test_batch_size, args)
+train_data_X, trainXlen = batchify(corpus.train[0], args.batch_size, args)
+val_data_X, valXlen = batchify(corpus.valid[0], eval_batch_size, args)
+test_data_X, testXlen = batchify(corpus.test[0], test_batch_size, args)
+train_data_Y, trainYlen = batchify(corpus.train[1], args.batch_size, args)
+val_data_Y, valYlen = batchify(corpus.valid[1], eval_batch_size, args)
+test_data_Y, testYlen = batchify(corpus.test[1], test_batch_size, args)
 
 ntokens = len(corpus.dictionary.idx2word)
 ntokens_out = len(corpus.dictionary_out.idx2word)
@@ -174,30 +174,22 @@ total_params = sum(x.size()[0] * x.size()[1] if len(x.size()) > 1 else x.size()[
 # Training
 #############################################
 
-def batch_loss(X, Y):
+def batch_loss(X, Y, x_lens, y_lens):
     assert(len(X)==args.batch_size)
-    # waiting
-    #hid = model_encoder.init_hidden(args.batch_size)
-    #hid = repackage_hidden(hid)
-    #X_emb = in_embedding(X)
-    #X_emb = list(map(lambda x:self.encoder(torch.LongTensor([x])).squeeze(0), X))
-    #X_emb = torch.transpose(X_emb, 1, 0)
     #   sen_embs: bsz * emb_dim
     #   hiddens: bsz * x_len * hid_dim
-    #init_hidden = model_encoder(args.batch_size)
-    hiddens, sen_embs = model_encoder(X)
-    #print("size of sen_embs", sen_embs.size())
-    #print("size of hiddens", len(hiddens), len(hiddens[0]))
-    # waiting
+    hiddens, _, sen_embs = model_encoder(X, x_lens)
     word_loss = 0.0
     pos_loss = 0.0
     print(len(X),end=' ')
+    max_len = max(x_lens)
+    may_len = max(y_lens)
     for i in range(len(X)):
+        x_len = x_lens[i]
+        y_len = y_lens[i]
         sen_emb = sen_embs[i].cuda()
-        hidden = hiddens[i].cuda()
-        x_len = len(X[i])
-        y_len = len(Y[i])
-        tar_sen = [corpus.dictionary_out.idx2word[a] for a in Y[i]]
+        hidden = hiddens[i][0:x_len].cuda()
+        tar_sen = [corpus.dictionary_out.idx2word[a] for a in Y[i][0:y_len].tolist()]
         ans_ind, choose_words, trees_before_insert, final_tree = behave_seq_gen(tar_sen, outtree_embedding)
         graphs_before_insert = [a.tree2graph(out_embedding, corpus.dictionary_out, args.nodesize, cuda=True) for a in trees_before_insert]
         # gcns: y_len * node_num * node_dim
@@ -205,13 +197,14 @@ def batch_loss(X, Y):
         gcns = [a.the_gcn(model_pos.gcn) for a in graphs_before_insert]
         aggrs = torch.FloatTensor([a.the_aggr().tolist() for a in graphs_before_insert]).cuda()
         #print(sen_embs.size())
-        #print(sen_emb.size())
+        #print(hiddens.size())
         
         output = model_word(sen_emb, hidden, aggrs)
         able_words = [a.able_words() for a in trees_before_insert]
         able_inds = [[corpus.dictionary_out.word2idx[b] for b in a] for a in able_words]
         prob_vals = [1.0/len(a) for a in able_inds]
         ans_dist = torch.zeros(y_len, ntokens_out, requires_grad=False)
+        #print(len(trees_before_insert),y_len)
         if args.cuda:
             ans_dist = ans_dist.cuda()
         for a in range(y_len):
@@ -260,14 +253,15 @@ if args.optimizer == 'adam':
 def train_one_epoch(epoch):
     # We can use dropout in training?
     total_loss = 0.
-    
     ntokens = len(corpus.dictionary)
     ntokens_out = len(corpus.dictionary_out)
     #hidden_encoder = model_encoder.init_hidden(args.batch_size)
     #hidden_pos = model_pos.init_hidden()
 
-    for i in range(len(train_data_X)):
+    for i in range(train_data_X.size(0)):
         start_time = time.time()
+        x_lens = trainXlen[i*args.batch_size:(i+1)*args.batch_size]
+        y_lens = trainYlen[i*args.batch_size:(i+1)*args.batch_size]
         X = train_data_X[i]
         Y = train_data_Y[i]
         #print("size of X", len(X), len(X[0]))
@@ -283,7 +277,7 @@ def train_one_epoch(epoch):
         optimizer_pos.zero_grad()
         optimizer_encoder.zero_grad()
 
-        pos_loss, word_loss = batch_loss(X, Y)
+        pos_loss, word_loss = batch_loss(X, Y, x_lens, y_lens)
         print('backwarding')
         pos_loss.backward()
         word_loss.backward()
