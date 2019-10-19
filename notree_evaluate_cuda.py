@@ -59,15 +59,17 @@ def model_load(fn):
 ### Input a encoding of a sentence, return the decoding result and corresponding tree in timestamps
 def encode2seq(model_pos, model_encoder, model_word, code, hiddens, corpus, threshold, strategy='greedy'):
     curtree = Tree('<start>', outtree_embedding)
-    ht = torch.zeros(model_word.nlayers, 1, model_word.hidden_dim)
-    ct = torch.zeros(model_word.nlayers, 1, model_word.hidden_dim)
+    ht = torch.zeros(model_word.nlayers, 1, model_word.hidden_dim).cuda()
+    ct = torch.zeros(model_word.nlayers, 1, model_word.hidden_dim).cuda()
     a = 0
     while True:
         if strategy == 'greedy':
             cur_graph = curtree.tree2graph(model_encoder.encoder, corpus.dictionary_out, model_pos.node_dim)
             cur_graph.the_gcn(model_pos.gcn)
-            tree_emb = cur_graph.the_aggr()
+            tree_emb = cur_graph.the_aggr().cuda()
             word_dist, ht, ct = model_word(code, hiddens, tree_emb, ht, ct)
+            #for i in range(len(word_dist)):
+                #print(word_dist[i], corpus.dictionary_out.idx2word[i])
             #if max(word_dist) < threshold:
             #    break
             chosen_word = corpus.dictionary_out.idx2word[int(torch.argmax(word_dist))]
@@ -85,7 +87,7 @@ def encode2seq(model_pos, model_encoder, model_word, code, hiddens, corpus, thre
 ### Input a batch of sentence in words, return its generated sentence and tree
 def predict_batch(model_pos, model_encoder, model_word, batch_X, corpus, threshold):
     batch_size = len(batch_X)
-    print(batch_X)
+    print('input:', batch_X)
     # hidden_encoder = model_encoder.init_hidden(batch_size)
     # waiting
     #   sen_embs: bsz * emb_dim
@@ -93,9 +95,11 @@ def predict_batch(model_pos, model_encoder, model_word, batch_X, corpus, thresho
     hiddens, sen_embs = model_encoder(batch_X)
     # waiting
 
-    YsYtrees = [encode2seq(model_pos, model_encoder, model_word, encode, hid.squeeze(1), corpus, threshold) for encode, hid in zip(sen_embs, hiddens)]
+    YsYtrees = [encode2seq(model_pos, model_encoder, model_word, encode.cuda(), hid.squeeze(1).cuda(), corpus, threshold) for encode, hid in zip(sen_embs, hiddens)]
     YsYtrees = list(zip(*YsYtrees))
     YsYtrees = list(map(list, YsYtrees))
+    #for a in YsYtrees[1]:
+    #    print_tree(a)
 
     return YsYtrees[0], YsYtrees[1]
 
@@ -105,10 +109,14 @@ def eval_total_bleu(model_pos, model_encoder, model_word, test_data, test_ans, c
     assert(len(test_data)==len(test_ans))
     for i in range(len(test_data)):
         Ys, Ytrees = predict_batch(model_pos, model_encoder, model_word, test_data[i], corpus, args.threshold)
-        print(Ys, test_ans[i])
+        for a in range(len(Ys)):
+            print('result:', Ys[a])
+            print_tree(Ytrees[a])
+            print('ans:', test_ans[i][a])
+        #print(Ys, test_ans[i])
         bleus.append(list(map(sentence_bleu, Ys, test_ans[i])))
 
-    return bleus, mean(bleus)
+    return bleus, np.mean(bleus)
 
 if __name__ == "__main__":
     ### Split the data into little batches
@@ -124,10 +132,10 @@ if __name__ == "__main__":
         print('Resuming models ...')
         model_load(args.resume)
 
-    if args.cuda:
-        model_pos = model_pos.cuda()
-        model_encoder = model_encoder.cuda()
-        model_word = model_word.cuda()
+    model_pos = model_pos.cuda()
+    model_encoder = model_encoder.cuda()
+    model_word = model_word.cuda()
+    out_embedding = out_embedding.cuda()
     print('-------------------start evaluating-------------------')
     model_pos.eval()
     model_encoder.eval()

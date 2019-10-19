@@ -15,7 +15,7 @@ import cProfile
 import notree_data as data
 from utils import batchify, repackage_hidden
 from notree_model_cuda import Pos_choser, sentence_encoder, word_choser
-from notree_evaluate import predict_batch
+#from notree_evaluate import predict_batch
 from encoder import ModelEncoder
 import notree_tree as tree
 from notree_tree import behave_seq_gen, print_tree
@@ -40,9 +40,9 @@ parser.add_argument('--chunk_size', type=int, default=16,
                     help='number of units per chunk')
 parser.add_argument('--nlayers', type=int, default=2,
                     help='number of layers')
-parser.add_argument('--poslr', type=float, default=0.0003,
+parser.add_argument('--poslr', type=float, default=3,
                     help='initial pos learning rate')
-parser.add_argument('--encoderlr', type=float, default=0.0003,
+parser.add_argument('--encoderlr', type=float, default=3,
                     help='initial encoder learning rate')
 parser.add_argument('--clip', type=float, default=0.25,
                     help='gradient clipping')
@@ -198,7 +198,7 @@ def batch_loss(X, Y):
         x_len = len(X[i])
         y_len = len(Y[i])
         tar_sen = [corpus.dictionary_out.idx2word[a] for a in Y[i]]
-        ans_ind, choose_words, trees_before_insert, final_tree = behave_seq_gen(tar_sen, outtree_embedding)
+        ans_ind, choose_words, trees_before_insert, final_tree = behave_seq_gen(tar_sen, outtree_embedding, strategy='R2L')
         graphs_before_insert = [a.tree2graph(out_embedding, corpus.dictionary_out, args.nodesize, cuda=True) for a in trees_before_insert]
         # gcns: y_len * node_num * node_dim
         # aggrs: y_len * node_dim
@@ -211,12 +211,17 @@ def batch_loss(X, Y):
         able_words = [a.able_words() for a in trees_before_insert]
         able_inds = [[corpus.dictionary_out.word2idx[b] for b in a] for a in able_words]
         prob_vals = [1.0/len(a) for a in able_inds]
-        ans_dist = torch.zeros(y_len, ntokens_out, requires_grad=False)
-        if args.cuda:
-            ans_dist = ans_dist.cuda()
+        #ans_dist = torch.zeros(y_len, ntokens_out, requires_grad=False)
+        
         for a in range(y_len):
-            ans_dist[a][able_inds[a]] = prob_vals[a]
-        word_loss = word_loss + F.binary_cross_entropy(output, ans_dist)
+            ans_dist = torch.zeros(ntokens_out, requires_grad=False)
+            if args.cuda:
+                ans_dist = ans_dist.cuda()
+            ans_dist[able_inds[a]] = prob_vals[a]
+            word_loss = word_loss + F.binary_cross_entropy(output[a], ans_dist)
+            #print('output:', output[a])
+            #print('target:', ans_dist, able_inds[a])
+        #word_loss = word_loss + F.binary_cross_entropy(output, ans_dist)*y_len
         
         ans_dist2 = torch.zeros(ntokens_out, requires_grad=False)
         if args.cuda:
@@ -238,6 +243,8 @@ def batch_loss(X, Y):
                 ans_dist_pos[ids] = prob_vals
                 #print(scores, "###", ans_dist_pos)
                 #print_tree(trees_before_insert[a])
+                #print('output_pos:', scores)
+                #print('target_pos:', ans_dist_pos)
                 return F.binary_cross_entropy(scores, ans_dist_pos)
 
             pos_loss = pos_loss + sum(map(calculate_loss, range(len(able_words[a])))) / len(able_words[a])
@@ -283,7 +290,7 @@ def train_one_epoch(epoch):
         optimizer_pos.zero_grad()
         optimizer_encoder.zero_grad()
 
-        pos_loss, word_loss = batch_loss(X, Y)
+        word_loss, pos_loss = batch_loss(X, Y)
         print('backwarding')
         pos_loss.backward()
         word_loss.backward()
@@ -327,6 +334,7 @@ try:
     #cProfile.run('train_one_epoch(1)')
     for epoch in range(1, args.epochs + 1):
         train_one_epoch(epoch)
+    model_save('models')
 except KeyboardInterrupt:
     print('-' * 89)
     print('Exiting from training early')

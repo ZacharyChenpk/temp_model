@@ -139,39 +139,54 @@ class Tree():
         return list(set(tmp))
 
 
-def behave_seq_gen(sen, embedding):
+def behave_seq_gen(sen, embedding, strategy='LEARN'):
     cur_tree = Tree('<start>', embedding)
     l = len(sen)
-    ran_split = random.randint(1,l)
-    cur_tree.L_able = sen[0:ran_split] if ran_split>0 else []
-    cur_tree.R_able = sen[ran_split:] if ran_split<l else []
-    ans_ind = []
-    choose_words = []
-    trees_before_insert = []
-    if l == 1:
-        ans_ind = [0]
-        trees_before_insert = [cur_tree]
+    if strategy == 'LEARN':
+        ran_split = random.randint(1,l)
+        cur_tree.L_able = sen[0:ran_split] if ran_split>0 else []
+        cur_tree.R_able = sen[ran_split:] if ran_split<l else []
+        ans_ind = []
+        choose_words = []
+        trees_before_insert = []
+        if l == 1:
+            ans_ind = [0]
+            trees_before_insert = [cur_tree]
+            final_tree = copy.deepcopy(cur_tree)
+            final_tree.insert_son(0, sen[0], embedding)
+            choose_words = sen
+            return ans_ind, choose_words, trees_before_insert, final_tree
+        while True:
+            alleaves = cur_tree.leaves(True)
+            judge = lambda x: True if ((x.left == False and len(x.L_able)>0) or (x.right == False and len(x.R_able)>0)) else False
+            leaves = [leave for leave in alleaves if judge(leave)]
+            if len(leaves) == 0:
+                return ans_ind, choose_words, trees_before_insert, cur_tree
+            ran_split = random.randint(0,len(leaves)-1) if len(leaves)>1 else 0
+            ran_parent = leaves[ran_split]
+            ans_ind.append(ran_parent.index)
+            trees_before_insert.append(copy.deepcopy(cur_tree))
+            ables = ran_parent.L_able if (ran_parent.left == False and len(ran_parent.L_able)>0) else ran_parent.R_able
+            # print(ran_parent.root,':',ables)
+            ran_split = random.randint(0,len(ables)-1) if len(ables)>1 else 0
+            choose_words.append(ables[ran_split])
+            cur_tree.insert_son(ran_parent.index, ables[ran_split], embedding)
+            cur_tree.make_index()
+    elif strategy == 'R2L':
+        cur_tree.L_able = [sen[-1]]
+        tmp = cur_tree
+        ans_ind = [0]*l
+        trees_before_insert = []
+        choose_words = sen[::-1]
+        for i in range(l):
+            trees_before_insert.append(copy.deepcopy(cur_tree))
+            new_node = Tree(sen[l-i-1], embedding)
+            tmp.left = new_node
+            new_node.L_able = [sen[l-i-2]] if i<l-1 else []
+            tmp = new_node
+            cur_tree.make_index()
         final_tree = copy.deepcopy(cur_tree)
-        final_tree.insert_son(0, sen[0], embedding)
-        choose_words = sen
         return ans_ind, choose_words, trees_before_insert, final_tree
-    while True:
-        alleaves = cur_tree.leaves(True)
-        judge = lambda x: True if ((x.left == False and len(x.L_able)>0) or (x.right == False and len(x.R_able)>0)) else False
-        leaves = [leave for leave in alleaves if judge(leave)]
-        if len(leaves) == 0:
-            return ans_ind, choose_words, trees_before_insert, cur_tree
-        ran_split = random.randint(0,len(leaves)-1) if len(leaves)>1 else 0
-        ran_parent = leaves[ran_split]
-        ans_ind.append(ran_parent.index)
-        trees_before_insert.append(copy.deepcopy(cur_tree))
-        ables = ran_parent.L_able if (ran_parent.left == False and len(ran_parent.L_able)>0) else ran_parent.R_able
-        # print(ran_parent.root,':',ables)
-        ran_split = random.randint(0,len(ables)-1) if len(ables)>1 else 0
-        choose_words.append(ables[ran_split])
-        cur_tree.insert_son(ran_parent.index, ables[ran_split], embedding)
-        cur_tree.make_index()
-
 
 '''
 def random_seq(tree):
