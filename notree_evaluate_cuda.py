@@ -68,8 +68,8 @@ def encode2seq(model_pos, model_encoder, model_word, code, hiddens, corpus, thre
             cur_graph.the_gcn(model_pos.gcn)
             tree_emb = cur_graph.the_aggr().cuda()
             word_dist, ht, ct = model_word(code, hiddens, tree_emb, ht, ct)
-            #for i in range(len(word_dist)):
-                #print(word_dist[i], corpus.dictionary_out.idx2word[i])
+            for i in range(len(word_dist)):
+                print(word_dist[i], corpus.dictionary_out.idx2word[i])
             #if max(word_dist) < threshold:
             #    break
             chosen_word = corpus.dictionary_out.idx2word[int(torch.argmax(word_dist))]

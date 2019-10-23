@@ -40,9 +40,9 @@ parser.add_argument('--chunk_size', type=int, default=16,
                     help='number of units per chunk')
 parser.add_argument('--nlayers', type=int, default=2,
                     help='number of layers')
-parser.add_argument('--poslr', type=float, default=3,
+parser.add_argument('--poslr', type=float, default=0.1,
                     help='initial pos learning rate')
-parser.add_argument('--encoderlr', type=float, default=3,
+parser.add_argument('--encoderlr', type=float, default=1,
                     help='initial encoder learning rate')
 parser.add_argument('--clip', type=float, default=0.25,
                     help='gradient clipping')
@@ -137,11 +137,11 @@ for i in range(len(corpus.dictionary_out.idx2word)):
     weight2[index, :] = torch.from_numpy(word2vec2[corpus.dictionary_out.idx2word[i]])
 
 train_data_X = batchify(corpus.train[0], args.batch_size, args)
-val_data_X = batchify(corpus.valid[0], eval_batch_size, args)
-test_data_X = batchify(corpus.test[0], test_batch_size, args)
+#val_data_X = batchify(corpus.valid[0], eval_batch_size, args)
+#test_data_X = batchify(corpus.test[0], test_batch_size, args)
 train_data_Y = batchify(corpus.train[1], args.batch_size, args)
-val_data_Y = batchify(corpus.valid[1], eval_batch_size, args)
-test_data_Y = batchify(corpus.test[1], test_batch_size, args)
+#val_data_Y = batchify(corpus.valid[1], eval_batch_size, args)
+#test_data_Y = batchify(corpus.test[1], test_batch_size, args)
 
 ntokens = len(corpus.dictionary.idx2word)
 ntokens_out = len(corpus.dictionary_out.idx2word)
@@ -197,6 +197,9 @@ def batch_loss(X, Y):
         hidden = hiddens[i].cuda()
         x_len = len(X[i])
         y_len = len(Y[i])
+        if y_len == 0:
+            print(i, X[i], Y[i])
+        assert(y_len>0)
         tar_sen = [corpus.dictionary_out.idx2word[a] for a in Y[i]]
         ans_ind, choose_words, trees_before_insert, final_tree = behave_seq_gen(tar_sen, outtree_embedding, strategy='R2L')
         graphs_before_insert = [a.tree2graph(out_embedding, corpus.dictionary_out, args.nodesize, cuda=True) for a in trees_before_insert]
@@ -334,10 +337,10 @@ try:
     #cProfile.run('train_one_epoch(1)')
     for epoch in range(1, args.epochs + 1):
         train_one_epoch(epoch)
-    model_save('models')
+    model_save('models2')
 except KeyboardInterrupt:
     print('-' * 89)
     print('Exiting from training early')
-    model_save('models')
+    model_save('models2')
     print('| End of training | pos loss/epoch {:5.2f} | decoder ppl/epoch {:5.2f}'.format(torch.mean(torch.Tensor(global_pos_losses)), torch.mean(torch.Tensor(global_decoder_losses))))
     

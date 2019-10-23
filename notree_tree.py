@@ -142,6 +142,7 @@ class Tree():
 def behave_seq_gen(sen, embedding, strategy='LEARN'):
     cur_tree = Tree('<start>', embedding)
     l = len(sen)
+    assert(l>0)
     if strategy == 'LEARN':
         ran_split = random.randint(1,l)
         cur_tree.L_able = sen[0:ran_split] if ran_split>0 else []
@@ -173,7 +174,7 @@ def behave_seq_gen(sen, embedding, strategy='LEARN'):
             cur_tree.insert_son(ran_parent.index, ables[ran_split], embedding)
             cur_tree.make_index()
     elif strategy == 'R2L':
-        cur_tree.L_able = [sen[-1]]
+        cur_tree.L_able = [sen[l-1]]
         tmp = cur_tree
         ans_ind = [0]*l
         trees_before_insert = []

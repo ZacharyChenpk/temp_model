@@ -17,7 +17,7 @@ def batchify(data, bsz, args):
     #print(data)
     #print(type(data))
     # Evenly divide the data across the bsz batches.
-    data = data.reshape((bsz, -1)).T ###.contiguous()
+    data = data.reshape((-1,bsz)) ###.contiguous()
     '''
     data = torch.Tensor(data)
     if args.cuda:
